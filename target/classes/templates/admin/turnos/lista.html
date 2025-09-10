@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"> <!-- Declaración del espacio de nombres para Thymeleaf -->
+
+<head>
+    <meta charset="UTF-8"> <!-- Codificación de caracteres -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Vista adaptable a dispositivos -->
+    <title>Gestión de Turnos - Barbería</title> <!-- Título de la pestaña del navegador -->
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <!-- Título/logo del panel -->
+            <a class="navbar-brand" href="/admin">Panel de Administración</a>
+
+            <!-- Botón colapsable para pantallas pequeñas -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Enlaces del menú -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/barberos">Barberos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/cortes">Servicios</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/admin/turnos">Turnos</a> <!-- Página actual -->
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/reservas">Reservas</a>
+                    </li>
+                        <li><a class="nav-link" href="/admin/login/logout"> Cerrar Sesión</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========== CONTENIDO PRINCIPAL ========== -->
+    <div class="container py-5">
+        <!-- Título y botones -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Gestión de Turnos</h1>
+            <div>
+                <!-- Botón para ver turnos disponibles -->
+                <a href="/admin/turnos/disponibles" class="btn btn-success me-2">
+                    <i class="bi bi-check-circle"></i> Ver Disponibles
+                </a>
+                <!-- Botón para ver turnos no disponibles -->
+                <a href="/admin/turnos/no-disponibles" class="btn btn-warning">
+                    <i class="bi bi-x-circle"></i> Ver No Disponibles
+                </a>
+            </div>
+        </div>
+
+        <!-- ========== MENSAJES DE ALERTA ========== -->
+
+        <!-- Mensaje de éxito -->
+        <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${mensaje}"></span> <!-- Texto dinámico del mensaje -->
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Mensaje de error -->
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${error}"></span> <!-- Texto dinámico del error -->
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- ========== FORMULARIO DE FILTRO ========== -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form th:action="@{/admin/turnos/filtrar}" method="get" class="row g-3">
+                    <!-- Filtro por barbero -->
+                    <div class="col-md-4">
+                        <label for="barberoId" class="form-label">Barbero</label>
+                        <select class="form-select" id="barberoId" name="barberoId">
+                            <option value="">Todos</option>
+                            <option th:each="barbero : ${barberos}"
+                                    th:value="${barbero.idBarbero}"
+                                    th:text="${barbero.nombre}"
+                                    th:selected="${barbero.idBarbero == filtroBarberoId}">
+                                Juan Pérez
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Filtro por estado -->
+                    <div class="col-md-4">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">Todos</option>
+                            <option value="DISPONIBLE" th:selected="${filtroEstado == 'DISPONIBLE'}">Disponible</option>
+                            <option value="NO_DISPONIBLE" th:selected="${filtroEstado == 'NO_DISPONIBLE'}">No Disponible</option>
+                        </select>
+                    </div>
+
+                    <!-- Botón filtrar -->
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-filter"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ========== TABLA DE TURNOS ========== -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Barbero</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Recorre la lista de turnos -->
+                            <tr th:each="turno : ${turnos}">
+                                <td th:text="${turno.idTurno}">1</td>
+                                <td th:text="${#temporals.format(turno.fechaHora, 'dd/MM/yyyy')}">01/01/2025</td>
+                                <td th:text="${#temporals.format(turno.fechaHora, 'HH:mm')}">10:00</td>
+                                <td th:text="${turno.barbero != null ? turno.barbero.nombre : 'N/A'}">Barbero</td>
+
+                                <!-- Estado del turno con color -->
+                                <td>
+                                    <span th:class="${'badge ' + (turno.estado.name() == 'DISPONIBLE' ? 'bg-success' : 'bg-warning')}">
+                                        <span th:text="${turno.estado}">Estado</span>
+                                    </span>
+                                </td>
+
+                                <!-- Acciones por turno -->
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <!-- Marcar como no disponible -->
+                                        <a th:if="${turno.estado.name() == 'DISPONIBLE'}"
+                                           th:href="@{'/admin/turnos/marcar-no-disponible/' + ${turno.idTurno}}"
+                                           class="btn btn-warning btn-sm">
+                                            <i class="bi bi-x-circle"></i> Marcar No Disponible
+                                        </a>
+
+                                        <!-- Marcar como disponible -->
+                                        <a th:if="${turno.estado.name() == 'NO_DISPONIBLE'}"
+                                           th:href="@{'/admin/turnos/marcar-disponible/' + ${turno.idTurno}}"
+                                           class="btn btn-success btn-sm">
+                                            <i class="bi bi-check-circle"></i> Marcar Disponible
+                                        </a>
+
+                                        <!-- Eliminar turno -->
+                                        <a th:href="@{'/admin/turnos/eliminar/' + ${turno.idTurno}}"
+                                           class="btn btn-danger btn-sm"
+                                           onclick="return confirm('¿Estás seguro de eliminar este turno?')">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Mensaje si no hay turnos -->
+                            <tr th:if="${turnos.empty}">
+                                <td colspan="6" class="text-center">No hay turnos registrados</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <!-- Información del panel -->
+                <div class="col-md-6">
+                    <h5>Barbería Estilo - Panel de Administración</h5>
+                    <p>Sistema de gestión para administradores.</p>
+                </div>
+            </div>
+
+            <!-- Derechos de autor -->
+            <div class="text-center mt-4">
+                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts de Bootstrap (JS) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

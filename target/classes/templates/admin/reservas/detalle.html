@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Reserva - Barbería</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/admin">Panel de Administración</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/barberos">Barberos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/cortes">Servicios</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/turnos">Turnos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/admin/reservas">Reservas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Volver al sitio</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Detalle de Reserva</h1>
+            <a href="/admin/reservas" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver a la lista
+            </a>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Información de la Reserva</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>ID de Reserva:</strong> <span th:text="${reserva.idReserva}">1</span></p>
+                        <p><strong>Fecha de Reserva:</strong> <span th:text="${#temporals.format(reserva.fechaHoraReserva, 'dd/MM/yyyy HH:mm')}">01/01/2025 10:00</span></p>
+                        <p><strong>Fecha del Turno:</strong> <span th:text="${#temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm')}">05/01/2025 15:30</span></p>
+                        <p>
+                            <strong>Estado:</strong> 
+                            <span th:class="${'badge ' + 
+                                (reserva.estado.name() == 'PENDIENTE' ? 'bg-warning' : 
+                                (reserva.estado.name() == 'COMPLETADA' ? 'bg-success' : 'bg-danger'))}">
+                                <span th:text="${reserva.estado}">Estado</span>
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Cliente:</strong> <span th:text="${reserva.cliente != null ? reserva.cliente.nombre : 'N/A'}">Cliente</span></p>
+                        <p><strong>Teléfono:</strong> <span th:text="${reserva.cliente != null ? reserva.cliente.telefono : 'N/A'}">Teléfono</span></p>
+                        <p><strong>Email:</strong> <span th:text="${reserva.cliente != null ? reserva.cliente.correo : 'N/A'}">Email</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Detalles del Servicio</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Barbero:</strong> <span th:text="${reserva.barbero != null ? reserva.barbero.nombre : 'N/A'}">Barbero</span></p>
+                        <p><strong>Especialidad:</strong> <span th:text="${reserva.barbero != null ? reserva.barbero.especialidad : 'N/A'}">Especialidad</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Servicio:</strong> <span th:text="${reserva.corte != null ? reserva.corte.nombre : 'N/A'}">Servicio</span></p>
+                        <p><strong>Precio:</strong> <span th:text="${reserva.corte != null ? '$' + reserva.corte.precio : 'N/A'}">$20.00</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4" th:if="${reserva.comentarios != null && !reserva.comentarios.isEmpty()}">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Comentarios</h5>
+            </div>
+            <div class="card-body">
+                <p th:text="${reserva.comentarios}">Comentarios del cliente</p>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <div>
+                <a th:if="${reserva.estado.name() == 'PENDIENTE'}" 
+                   th:href="@{'/admin/reservas/completar/' + ${reserva.idReserva}}" 
+                   class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Marcar como Completada
+                </a>
+                <a th:if="${reserva.estado.name() == 'PENDIENTE'}" 
+                   th:href="@{'/admin/reservas/cancelar/' + ${reserva.idReserva}}" 
+                   class="btn btn-warning">
+                    <i class="bi bi-x-circle"></i> Cancelar Reserva
+                </a>
+            </div>
+            <a th:href="@{'/admin/reservas/eliminar/' + ${reserva.idReserva}}" 
+               class="btn btn-danger"
+               onclick="return confirm('¿Estás seguro de eliminar esta reserva?')">
+                <i class="bi bi-trash"></i> Eliminar Reserva
+            </a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Barbería Estilo - Panel de Administración</h5>
+                    <p>Sistema de gestión para administradores.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="/" class="btn btn-outline-light">Volver al sitio principal</a>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

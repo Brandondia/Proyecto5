@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barbería - Inicio</title>
+    <!-- Enlace a la hoja de estilos de Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Estilos para la sección principal (Hero) con imagen de fondo */
+        .hero-section {
+            background-image: url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            padding: 150px 0;
+        }
+        /* Efecto de hover en las tarjetas de los servicios */
+        .service-card {
+            transition: transform 0.3s;
+        }
+        .service-card:hover {
+            transform: translateY(-10px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Barra de navegación (Navbar) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Barbería Estilo</a>
+            <!-- Botón de menú para pantallas pequeñas -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <!-- Enlace a la página de inicio -->
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Inicio</a>
+                    </li>
+                    <!-- Enlaces para registrarse y/o iniciar sesión, solo si no hay usuario logueado -->
+                    <li class="nav-item" th:if="${clienteLogueado == null}">
+                        <a class="nav-link" href="/registro">Registrarse</a>
+                    </li>
+                    <li class="nav-item" th:if="${clienteLogueado == null}">
+                        <a class="nav-link" href="/login">Iniciar Sesión</a>
+                    </li>
+                    <!-- Enlaces de reserva y cierre de sesión, solo si hay un usuario logueado -->
+                    <li class="nav-item" th:if="${clienteLogueado != null}">
+                        <a class="nav-link" href="/reserva">Reservar</a>
+                    </li>
+                    <li class="nav-item" th:if="${clienteLogueado != null}">
+                        <a class="nav-link" href="/login/logout">Cerrar Sesión</a>
+                    </li>
+                    <!-- Enlace al panel de administración -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/login">Administración</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sección Hero (principal) -->
+    <section class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold">Barbería Estilo</h1>
+            <p class="lead">El mejor lugar para tu corte de cabello y barba</p>
+            <!-- Botones de acción, que cambian dependiendo si hay un usuario logueado o no -->
+            <a th:if="${clienteLogueado == null}" href="/login" class="btn btn-primary btn-lg mt-3">Iniciar Sesión</a>
+            <a th:if="${clienteLogueado != null}" href="/reserva" class="btn btn-primary btn-lg mt-3">Reserva tu turno</a>
+        </div>
+    </section>
+
+    <!-- Sección de Servicios -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">Nuestros Servicios</h2>
+            <div class="row">
+                <!-- Tarjetas para cada servicio ofrecido -->
+                <div class="col-md-4 mb-4">
+                    <div class="card service-card h-100">
+                        <img src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Corte de cabello">
+                        <div class="card-body">
+                            <h5 class="card-title">Corte de Cabello</h5>
+                            <p class="card-text">Cortes modernos y clásicos adaptados a tu estilo personal.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card service-card h-100">
+                        <img src="https://th.bing.com/th/id/OIP.rgOBO8WsM-zrQE0ig5uEMQHaE6?cb=iwp2&rs=1&pid=ImgDetMain" class="card-img-top" alt="Afeitado">
+                        <div class="card-body">
+                            <h5 class="card-title">Afeitado Tradicional</h5>
+                            <p class="card-text">Afeitado con navaja y toallas calientes para una experiencia única.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card service-card h-100">
+                        <img src="https://th.bing.com/th/id/OIP.yzonQJ5pg7hKRNLn1bpp7QHaEK?w=324&h=182&c=7&r=0&o=7&cb=iwp2&pid=1.7&rm=3" class="card-img-top" alt="Barba">
+                        <div class="card-body">
+                            <h5 class="card-title">Arreglo de Barba</h5>
+                            <p class="card-text">Perfilado y mantenimiento de barba con productos premium.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección de Llamado a la Acción -->
+    <section class="bg-dark text-white py-5">
+        <div class="container text-center">
+            <h2>¿Listo para un nuevo look?</h2>
+            <p class="lead">Reserva tu turno ahora y déjate atender por nuestros profesionales</p>
+            <!-- Botones de acción, que cambian dependiendo si hay un usuario logueado o no -->
+            <a th:if="${clienteLogueado == null}" href="/registro" class="btn btn-primary btn-lg mt-3">Registrarse</a>
+            <a th:if="${clienteLogueado != null}" href="/reserva" class="btn btn-primary btn-lg mt-3">Reservar Ahora</a>
+        </div>
+    </section>
+
+    <!-- Pie de página -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <!-- Información sobre la barbería -->
+                <div class="col-md-4">
+                    <h5>Barbería Estilo</h5>
+                    <p>El mejor lugar para tu corte de cabello y barba.</p>
+                </div>
+                <!-- Información de contacto -->
+                <div class="col-md-4">
+                    <h5>Contacto</h5>
+                    <p>Dirección: Av. Principal 123<br>
+                    Teléfono: (123) 456-7890<br>
+                    Email: info@barberiaestilo.com</p>
+                </div>
+                <!-- Horarios de atención -->
+                <div class="col-md-4">
+                    <h5>Horarios</h5>
+                    <p>Lunes a Viernes: 9:00 AM - 8:00 PM<br>
+                    Sábados: 10:00 AM - 6:00 PM<br>
+                    Domingos: Cerrado</p>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script de Bootstrap para funcionalidades como navbar responsive -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "PaPrueba1Application",
+            "request": "launch",
+            "mainClass": "com.pa.spring.prueba1.pa_prueba1.PaPrueba1Application",
+            "projectName": "paprueba11"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-PaPrueba1Application<peluqueria-app>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.pa.spring.prueba1.pa_prueba1.PaPrueba1Application",
+            "projectName": "peluqueria-app",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

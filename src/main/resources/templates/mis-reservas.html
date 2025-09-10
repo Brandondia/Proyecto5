@@ -1,0 +1,166 @@
+<!-- Declaración del tipo de documento y configuración de Thymeleaf -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <!-- Configuración general de la página -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Reservas - Barbería</title>
+
+    <!-- Importación de estilos de Bootstrap y Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <!-- Barra de navegación superior -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Barbería Estilo</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <!-- Enlaces del menú -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <!-- Enlaces a otras páginas -->
+                    <li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/reserva">Reservar</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/reserva/mis-reservas">Mis Reservas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/login/logout">Cerrar Sesión</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal de la página -->
+    <div class="container py-5">
+        <h1 class="mb-4">Mis Reservas</h1>
+
+        <!-- Mostrar mensaje de éxito si existe -->
+        <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${mensaje}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Mostrar mensaje de error si existe -->
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Tarjeta que contiene la tabla de reservas -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <!-- Tabla con las reservas del cliente -->
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <!-- Encabezados de columna -->
+                                <th>Fecha y Hora</th>
+                                <th>Barbero</th>
+                                <th>Servicio</th>
+                                <th>Precio</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Iteración sobre la lista de reservas -->
+                            <tr th:each="reserva : ${reservas}">
+                                <!-- Mostrar fecha y hora formateadas -->
+                                <td th:text="${#temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm')}">01/01/2025 10:00</td>
+                                
+                                <!-- Mostrar nombre del barbero o "N/A" si es nulo -->
+                                <td th:text="${reserva.barbero != null ? reserva.barbero.nombre : 'N/A'}">Barbero</td>
+
+                                <!-- Mostrar nombre del servicio o "N/A" si es nulo -->
+                                <td th:text="${reserva.corte != null ? reserva.corte.nombre : 'N/A'}">Servicio</td>
+
+                                <!-- Mostrar precio del servicio o "N/A" si es nulo -->
+                                <td th:text="${reserva.corte != null ? '$' + reserva.corte.precio : 'N/A'}">$20.00</td>
+
+                                <!-- Mostrar estado con color según el valor -->
+                                <td>
+                                    <span th:class="${'badge ' + 
+                                        (reserva.estado.name() == 'PENDIENTE' ? 'bg-warning' : 
+                                        (reserva.estado.name() == 'COMPLETADA' ? 'bg-success' : 'bg-danger'))}">
+                                        <span th:text="${reserva.estado}">Estado</span>
+                                    </span>
+                                </td>
+
+                                <!-- Acción para cancelar si el estado es PENDIENTE -->
+                                <td>
+                                    <a th:if="${reserva.estado.name() == 'PENDIENTE'}" 
+                                       th:href="@{'/reserva/cancelar/' + ${reserva.idReserva}}" 
+                                       class="btn btn-danger btn-sm"
+                                       onclick="return confirm('¿Estás seguro de cancelar esta reserva?')">
+                                        <i class="bi bi-x-circle"></i> Cancelar
+                                    </a>
+
+                                    <!-- Si no es pendiente, mostrar texto inactivo -->
+                                    <span th:if="${reserva.estado.name() != 'PENDIENTE'}" class="text-muted">
+                                        No disponible
+                                    </span>
+                                </td>
+                            </tr>
+
+                            <!-- Mensaje si no hay reservas -->
+                            <tr th:if="${reservas.empty}">
+                                <td colspan="6" class="text-center">No tienes reservas registradas</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botón para hacer nueva reserva -->
+        <div class="text-center mt-4">
+            <a href="/reserva" class="btn btn-primary">
+                <i class="bi bi-calendar-plus"></i> Hacer una nueva reserva
+            </a>
+        </div>
+    </div>
+
+    <!-- Pie de página -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <!-- Información general -->
+                <div class="col-md-4">
+                    <h5>Barbería Estilo</h5>
+                    <p>El mejor lugar para tu corte de cabello y barba.</p>
+                </div>
+
+                <!-- Información de contacto -->
+                <div class="col-md-4">
+                    <h5>Contacto</h5>
+                    <p>Dirección: Av. Principal 123<br>
+                    Teléfono: (123) 456-7890<br>
+                    Email: info@barberiaestilo.com</p>
+                </div>
+
+                <!-- Horarios de atención -->
+                <div class="col-md-4">
+                    <h5>Horarios</h5>
+                    <p>Lunes a Viernes: 9:00 AM - 8:00 PM<br>
+                    Sábados: 10:00 AM - 6:00 PM<br>
+                    Domingos: Cerrado</p>
+                </div>
+            </div>
+
+            <!-- Derechos de autor -->
+            <div class="text-center mt-4">
+                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts de Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

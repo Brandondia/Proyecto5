@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Clientes</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <a class="navbar-brand" href="/admin">Panel de Administración</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/barberos">Barberos</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/cortes">Servicios</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/turnos">Turnos</a>
+                        </li>
+                            <li><a class="nav-link" href="/admin/login/logout"> Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    <div class="container mt-4">
+        <h2>Gestión de Clientes</h2>
+
+        <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <a href="/admin/clientes/nuevo" class="btn btn-success mb-3">+ Nuevo Cliente</a>
+
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="cliente : ${clientes}">
+                    <td th:text="${cliente.idCliente}"></td>
+                    <td th:text="${cliente.nombre}"></td>
+                    <td th:text="${cliente.correo}"></td>
+                    <td th:text="${cliente.telefono}"></td>
+                    <td>
+                        <a th:href="@{'/admin/clientes/detalle/' + ${cliente.idCliente}}" class="btn btn-info btn-sm">Ver</a>
+                        <a th:href="@{'/admin/clientes/editar/' + ${cliente.idCliente}}" class="btn btn-warning btn-sm">Editar</a>
+                        <a th:href="@{/admin/clientes/inhabilitar/{id}(id=${cliente.idCliente})}" 
+                            class="btn btn-warning"
+                            onclick="return confirm('¿Estás seguro de que deseas inhabilitar este cliente?');">
+                            Inhabilitar
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

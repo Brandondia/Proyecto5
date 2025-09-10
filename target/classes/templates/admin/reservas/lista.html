@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Reservas - Barbería</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/admin">Panel de Administración</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/barberos">Barberos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/cortes">Servicios</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/turnos">Turnos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/admin/reservas">Reservas</a>
+                    </li>
+                        <li><a class="nav-link" href="/admin/login/logout"> Cerrar Sesión</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Gestión de Reservas</h1>
+        </div>
+        
+        <!-- Mensajes de alerta -->
+        <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${mensaje}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        
+        <!-- Filtros -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="filtroForm" th:action="@{/admin/reservas/filtrar}" method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">Todos</option>
+                            <option value="PENDIENTE" th:selected="${estado == 'PENDIENTE'}">Pendiente</option>
+                            <option value="COMPLETADA" th:selected="${estado == 'COMPLETADA'}">Completada</option>
+                            <option value="CANCELADA" th:selected="${estado == 'CANCELADA'}">Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fechaInicio" class="form-label">Fecha Inicio</label>
+                        <input type="date" class="form-control" id="fechaInicio" name="fechaInicio" th:value="${fechaInicio}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fechaFin" class="form-label">Fecha Fin</label>
+                        <input type="date" class="form-control" id="fechaFin" name="fechaFin" th:value="${fechaFin}">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-filter"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tabla de reservas -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Fecha Reserva</th>
+                                <th>Fecha Turno</th>
+                                <th>Cliente</th>
+                                <th>Barbero</th>
+                                <th>Servicio</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="reserva : ${reservas}">
+                                <td th:text="${reserva.idReserva}">1</td>
+                                <td th:text="${#temporals.format(reserva.fechaHoraReserva, 'dd/MM/yyyy HH:mm')}">01/01/2025 10:00</td>
+                                <td th:text="${#temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm')}">05/01/2025 15:30</td>
+                                <td th:text="${reserva.cliente != null ? reserva.cliente.nombre : 'N/A'}">Cliente</td>
+                                <td th:text="${reserva.barbero != null ? reserva.barbero.nombre : 'N/A'}">Barbero</td>
+                                <td th:text="${reserva.corte != null ? reserva.corte.nombre : 'N/A'}">Servicio</td>
+                                <td>
+                                    <span th:class="${'badge ' + 
+                                        (reserva.estado.name() == 'PENDIENTE' ? 'bg-warning' : 
+                                        (reserva.estado.name() == 'COMPLETADA' ? 'bg-success' : 'bg-danger'))}">
+                                        <span th:text="${reserva.estado}">Estado</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a th:href="@{'/admin/reservas/detalle/' + ${reserva.idReserva}}" class="btn btn-info btn-sm">
+                                            <i class="bi bi-eye"></i> Ver
+                                        </a>
+                                        <a th:if="${reserva.estado.name() == 'PENDIENTE'}" 
+                                           th:href="@{'/admin/reservas/completar/' + ${reserva.idReserva}}" 
+                                           class="btn btn-success btn-sm">
+                                            <i class="bi bi-check-circle"></i> Completar
+                                        </a>
+                                        <a th:if="${reserva.estado.name() == 'PENDIENTE'}" 
+                                           th:href="@{'/admin/reservas/cancelar/' + ${reserva.idReserva}}" 
+                                           class="btn btn-warning btn-sm">
+                                            <i class="bi bi-x-circle"></i> Cancelar
+                                        </a>
+                                        <a th:href="@{'/admin/reservas/eliminar/' + ${reserva.idReserva}}" 
+                                           class="btn btn-danger btn-sm"
+                                           onclick="return confirm('¿Estás seguro de eliminar esta reserva?')">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${reservas == null || reservas.empty}">
+                                <td colspan="8" class="text-center">No hay reservas registradas</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Barbería Estilo - Panel de Administración</h5>
+                    <p>Sistema de gestión para administradores.</p>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
