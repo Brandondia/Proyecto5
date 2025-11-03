@@ -1,48 +1,53 @@
 package com.pa.spring.prueba1.pa_prueba1.model;
 
-import jakarta.persistence.*; // Importa todas las anotaciones de JPA necesarias
-import lombok.Data; // Lombok genera getters, setters, toString, etc.
-import java.time.LocalDateTime; // Clase para manejar fecha y hora
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.Data;
 
-@Entity // Indica que esta clase será mapeada como una entidad JPA
-@Data // Lombok genera automáticamente getters/setters y otros métodos útiles
+import java.time.LocalDateTime;
+
+@Entity
+@Data
 public class Reserva {
 
-    @Id // Define la clave primaria
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Autoincremental (auto-generado por la BD)
-    private Long idReserva; // Identificador único de la reserva
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long idReserva;
 
-    private LocalDateTime fechaHoraReserva; // Momento en que se hizo la reserva
+    private LocalDateTime fechaHoraReserva;
+    private LocalDateTime fechaHoraTurno;
 
-    private LocalDateTime fechaHoraTurno; // Fecha y hora del turno reservado (registro histórico)
+    @Enumerated(EnumType.STRING)
+    private EstadoReserva estado = EstadoReserva.PENDIENTE;
 
-    @Enumerated(EnumType.STRING) // Guarda el valor del enum como texto (no como ordinal)
-    private EstadoReserva estado = EstadoReserva.PENDIENTE; // Estado de la reserva
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "idCliente", referencedColumnName = "idCliente")
+    @JsonIgnore   // ⛔ Evita ciclo Cliente ↔ Reserva
+    private Cliente cliente;
 
-    @ManyToOne(fetch = FetchType.EAGER) // Relación muchos-a-uno con Cliente
-    @JoinColumn(name = "idCliente", referencedColumnName = "idCliente") // Clave foránea en BD
-    private Cliente cliente; // Cliente que hace la reserva
-
-    @ManyToOne(fetch = FetchType.EAGER) // Relación muchos-a-uno con Barbero
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "idBarbero", referencedColumnName = "idBarbero")
-    private Barbero barbero; // Barbero asignado
+    @JsonIgnore   // ⛔ Evita ciclo Barbero ↔ Reserva
+    private Barbero barbero;
 
-    @ManyToOne(fetch = FetchType.EAGER) // Relación muchos-a-uno con CorteDeCabello
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "idCorte", referencedColumnName = "id")
-    private CorteDeCabello corte; // Corte solicitado
+    private CorteDeCabello corte;
 
-    @ManyToOne(fetch = FetchType.EAGER) // Relación muchos-a-uno con Turno
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "idTurno", referencedColumnName = "idTurno")
-    private Turno turno; // Turno asignado
+    @JsonBackReference   // ✅ Rompe ciclo Reserva ↔ Turno
+    private Turno turno;
 
-    @Column(name = "comentarios", length = 100) // Comentarios con longitud máxima de 100 caracteres
+    @Column(name = "comentarios", length = 100)
     private String comentarios;
 
-    // Enumeración para representar el estado de la reserva
     public enum EstadoReserva {
         PENDIENTE,
         COMPLETADA,
         CANCELADA
     }
 }
+
 

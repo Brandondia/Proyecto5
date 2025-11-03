@@ -31,20 +31,24 @@
             border-radius: 50%;
             margin-right: 15px;
         }
+        .card-featured {
+            border: 2px solid #0d6efd;
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+        }
     </style>
 </head>
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="/admin">Panel de Administración</a>
+            <a class="navbar-brand" href="/admin/panel">Panel de Administración</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="/admin">Dashboard</a>
+                        <a class="nav-link active" href="/admin/panel">Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/barberos">Barberos</a>
@@ -59,13 +63,11 @@
                         <a class="nav-link" href="/admin/reservas">Reservas</a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i> <span th:text="${admin.nombre}">Admin</span>
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <span th:text="${nombreAdmin}">admin</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="/admin/perfil"><i class="bi bi-person"></i> Mi Perfil</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/admin/login/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -74,16 +76,10 @@
     </nav>
 
     <div class="container py-5">
-        <!-- Mensajes de alerta -->
-        <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
-            <span th:text="${mensaje}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Panel de Administración</h1>
             <div>
-                <span class="badge bg-primary">Administrador: <span th:text="${admin.nombre}">Admin</span></span>
+                <span class="badge bg-primary">Administrador: <span th:text="${nombreAdmin}">Admin</span></span>
             </div>
         </div>
         
@@ -142,7 +138,6 @@
                 </div>
             </div>
         </div>
-        
         <div class="row">
             <div class="col-md-4 mb-4">
                 <div class="card admin-card h-100">
@@ -189,12 +184,11 @@
                         <div class="card-icon mb-3">
                             <i class="bi bi-people"></i>
                         </div>
-                        <h5 class="card-title">Gestion de Clientes</h5>
+                        <h5 class="card-title">Gestión de Clientes</h5>
                         <p class="card-text">Administrar los datos de los clientes registrados.</p>
                         <a href="/admin/clientes" class="btn btn-primary">Administrar Clientes</a>
                     </div>
                 </div>
-
             </div>
 
             <div class="col-md-4 mb-4">
@@ -209,21 +203,26 @@
                     </div>
                 </div>
             </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card admin-card h-100">
+                    <div class="card-body text-center">
+                        <div class="card-icon mb-3">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h5 class="card-title">Reportes Semanales</h5>
+                        <p class="card-text">Consulta ingresos, cortes y estadísticas por semana.</p>
+                        <a href="/admin/reportes" class="btn btn-primary">Ver Reportes</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Footer -->
     <footer class="bg-dark text-white py-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Barbería Estilo - Panel de Administración</h5>
-                    <p>Sistema de gestión para administradores.</p>
-                </div>
-            </div>
-            <div class="text-center mt-4">
-                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
-            </div>
+        <div class="container text-center">
+            <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
         </div>
     </footer>
 

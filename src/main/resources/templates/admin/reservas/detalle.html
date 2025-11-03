@@ -11,14 +11,14 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="/admin">Panel de Administración</a>
+            <a class="navbar-brand" href="/admin/panel">Panel de Administración</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin">Dashboard</a>
+                        <a class="nav-link" href="/admin/panel">Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/barberos">Barberos</a>
@@ -33,7 +33,17 @@
                         <a class="nav-link active" href="/admin/reservas">Reservas</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Volver al sitio</a>
+                        <a class="nav-link" href="/admin/reportes">Reportes</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/admin/perfil"><i class="bi bi-person"></i> Mi Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -116,11 +126,55 @@
                     <i class="bi bi-x-circle"></i> Cancelar Reserva
                 </a>
             </div>
-            <a th:href="@{'/admin/reservas/eliminar/' + ${reserva.idReserva}}" 
-               class="btn btn-danger"
-               onclick="return confirm('¿Estás seguro de eliminar esta reserva?')">
+            <button type="button" 
+                    class="btn btn-danger"
+                    th:data-reserva-id="${reserva.idReserva}"
+                    th:data-cliente="${reserva.cliente != null ? reserva.cliente.nombre : 'N/A'}"
+                    th:data-fecha="${#temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm')}"
+                    onclick="mostrarModalEliminar(this)">
                 <i class="bi bi-trash"></i> Eliminar Reserva
-            </a>
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Eliminación -->
+    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="modalEliminarLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-trash text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="text-center mb-3"><strong>¿Estás seguro de eliminar esta reserva?</strong></p>
+                    <div class="alert alert-warning">
+                        <small><i class="bi bi-info-circle me-1"></i>Esta acción no se puede deshacer</small>
+                    </div>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <p class="mb-2"><strong>Detalles de la reserva:</strong></p>
+                            <ul class="mb-0">
+                                <li><strong>ID:</strong> <span id="modalReservaId"></span></li>
+                                <li><strong>Cliente:</strong> <span id="modalCliente"></span></li>
+                                <li><strong>Fecha:</strong> <span id="modalFecha"></span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </button>
+                    <a id="btnConfirmarEliminar" href="#" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Sí, Eliminar
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -132,9 +186,6 @@
                     <h5>Barbería Estilo - Panel de Administración</h5>
                     <p>Sistema de gestión para administradores.</p>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <a href="/" class="btn btn-outline-light">Volver al sitio principal</a>
-                </div>
             </div>
             <div class="text-center mt-4">
                 <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
@@ -143,5 +194,22 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function mostrarModalEliminar(button) {
+            const reservaId = button.getAttribute('data-reserva-id');
+            const cliente = button.getAttribute('data-cliente');
+            const fecha = button.getAttribute('data-fecha');
+            
+            document.getElementById('modalReservaId').textContent = reservaId;
+            document.getElementById('modalCliente').textContent = cliente;
+            document.getElementById('modalFecha').textContent = fecha;
+            
+            const url = '/admin/reservas/eliminar/' + reservaId;
+            document.getElementById('btnConfirmarEliminar').setAttribute('href', url);
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
+            modal.show();
+        }
+    </script>
 </body>
 </html>

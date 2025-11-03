@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ausencias - Panel del Barbero</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .ausencia-card {
+            border-left: 4px solid #0d6efd;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        .ausencia-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .ausencia-card.pendiente {
+            border-left-color: #ffc107;
+        }
+        .ausencia-card.aprobada {
+            border-left-color: #28a745;
+        }
+        .ausencia-card.rechazada {
+            border-left-color: #dc3545;
+        }
+        .form-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .stats-box {
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/barbero/panel">Panel del Barbero</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/panel">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/reservas">Mis Reservas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/horario">Mi Horario</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/barbero/ausencias">Ausencias</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <span th:text="${nombreBarbero}">Barbero</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/barbero/perfil"><i class="bi bi-person"></i> Mi Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="bi bi-calendar-x"></i> Gestión de Ausencias</h1>
+                <p class="text-muted">Solicita días libres o ausencias específicas</p>
+            </div>
+            <a href="/barbero/panel" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <!-- Mensajes de alerta -->
+        <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> <span th:text="${mensaje}">Solicitud enviada correctamente</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}">Error al procesar solicitud</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Estadísticas de ausencias -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stats-box bg-warning bg-opacity-10">
+                    <i class="bi bi-hourglass-split fs-2 text-warning"></i>
+                    <h3 class="mt-2 mb-0" th:text="${solicitudesPendientes}">2</h3>
+                    <small class="text-muted">Pendientes</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-box bg-success bg-opacity-10">
+                    <i class="bi bi-check-circle fs-2 text-success"></i>
+                    <h3 class="mt-2 mb-0" th:text="${solicitudesAprobadas}">5</h3>
+                    <small class="text-muted">Aprobadas</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-box bg-danger bg-opacity-10">
+                    <i class="bi bi-x-circle fs-2 text-danger"></i>
+                    <h3 class="mt-2 mb-0" th:text="${solicitudesRechazadas}">1</h3>
+                    <small class="text-muted">Rechazadas</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-box bg-info bg-opacity-10">
+                    <i class="bi bi-calendar-event fs-2 text-info"></i>
+                    <h3 class="mt-2 mb-0" th:text="${diasLibresRestantes}">10</h3>
+                    <small class="text-muted">Días Disponibles</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Formulario de nueva solicitud -->
+            <div class="col-lg-5 mb-4">
+                <div class="card form-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Nueva Solicitud de Ausencia</h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="/barbero/ausencias/solicitar" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label">Tipo de Ausencia</label>
+                                <select class="form-select" name="tipoAusencia" id="tipoAusencia" required>
+                                    <option value="">Seleccionar tipo...</option>
+                                    <option value="DIA_COMPLETO">Día Completo</option>
+                                    <option value="MEDIO_DIA">Medio Día</option>
+                                    <option value="HORAS_ESPECIFICAS">Horas Específicas</option>
+                                    <option value="VACACIONES">Vacaciones</option>
+                                    <option value="ENFERMEDAD">Enfermedad</option>
+                                    <option value="PERSONAL">Motivo Personal</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Fecha de Inicio</label>
+                                <input type="date" class="form-control" name="fechaInicio" required>
+                            </div>
+
+                            <div class="mb-3" id="fechaFinGroup">
+                                <label class="form-label">Fecha de Fin</label>
+                                <input type="date" class="form-control" name="fechaFin">
+                                <small class="text-muted">Opcional para ausencias de un solo día</small>
+                            </div>
+
+                            <div class="mb-3" id="horasGroup" style="display: none;">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label class="form-label">Hora Inicio</label>
+                                        <input type="time" class="form-control" name="horaInicio">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Hora Fin</label>
+                                        <input type="time" class="form-control" name="horaFin">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Motivo</label>
+                                <textarea class="form-control" name="motivo" rows="4" placeholder="Describe el motivo de tu ausencia..." required></textarea>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> <strong>Nota:</strong> Las solicitudes serán revisadas por el administrador. Recibirás una notificación cuando sea procesada.
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-send"></i> Enviar Solicitud
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de solicitudes -->
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Mis Solicitudes</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Filtros -->
+                        <div class="btn-group mb-3 w-100" role="group">
+                            <input type="radio" class="btn-check" name="filtroEstado" id="filtroTodas" checked>
+                            <label class="btn btn-outline-primary" for="filtroTodas">Todas</label>
+                            
+                            <input type="radio" class="btn-check" name="filtroEstado" id="filtroPendientes">
+                            <label class="btn btn-outline-warning" for="filtroPendientes">Pendientes</label>
+                            
+                            <input type="radio" class="btn-check" name="filtroEstado" id="filtroAprobadas">
+                            <label class="btn btn-outline-success" for="filtroAprobadas">Aprobadas</label>
+                            
+                            <input type="radio" class="btn-check" name="filtroEstado" id="filtroRechazadas">
+                            <label class="btn btn-outline-danger" for="filtroRechazadas">Rechazadas</label>
+                        </div>
+
+                        <!-- Solicitudes -->
+                        <div class="ausencias-list" style="max-height: 600px; overflow-y: auto;">
+                            <!-- Ejemplo de solicitud pendiente -->
+                            <div class="card ausencia-card pendiente">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-warning me-2">Pendiente</span>
+                                                <strong>Día Completo</strong>
+                                            </div>
+                                            <p class="mb-2">
+                                                <i class="bi bi-calendar3"></i> 
+                                                <strong>15 de Octubre 2025</strong>
+                                            </p>
+                                            <p class="text-muted mb-2">
+                                                <i class="bi bi-chat-left-text"></i> 
+                                                Cita médica programada
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="bi bi-clock"></i> Solicitado el 5 de Oct, 2025
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelarModal">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ejemplo de solicitud aprobada -->
+                            <div class="card ausencia-card aprobada">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-success me-2">Aprobada</span>
+                                                <strong>Vacaciones</strong>
+                                            </div>
+                                            <p class="mb-2">
+                                                <i class="bi bi-calendar3"></i> 
+                                                <strong>20 - 25 de Octubre 2025</strong>
+                                            </p>
+                                            <p class="text-muted mb-2">
+                                                <i class="bi bi-chat-left-text"></i> 
+                                                Vacaciones familiares programadas
+                                            </p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-clock"></i> Aprobado el 1 de Oct, 2025
+                                                </small>
+                                                <small class="text-success">
+                                                    <i class="bi bi-person-check"></i> Por: Admin
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ejemplo de solicitud rechazada -->
+                            <div class="card ausencia-card rechazada">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-danger me-2">Rechazada</span>
+                                                <strong>Medio Día</strong>
+                                            </div>
+                                            <p class="mb-2">
+                                                <i class="bi bi-calendar3"></i> 
+                                                <strong>12 de Octubre 2025</strong>
+                                                <span class="text-muted">(8:00 AM - 12:00 PM)</span>
+                                            </p>
+                                            <p class="text-muted mb-2">
+                                                <i class="bi bi-chat-left-text"></i> 
+                                                Asunto personal
+                                            </p>
+                                            <div class="alert alert-danger mb-2 py-2">
+                                                <small><strong>Motivo rechazo:</strong> Ya hay otro barbero ausente ese día</small>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-clock"></i> Rechazado el 4 de Oct, 2025
+                                                </small>
+                                                <small class="text-danger">
+                                                    <i class="bi bi-person-x"></i> Por: Admin
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ejemplo con horas específicas -->
+                            <div class="card ausencia-card aprobada">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-success me-2">Aprobada</span>
+                                                <strong>Horas Específicas</strong>
+                                            </div>
+                                            <p class="mb-2">
+                                                <i class="bi bi-calendar3"></i> 
+                                                <strong>10 de Octubre 2025</strong>
+                                            </p>
+                                            <p class="mb-2">
+                                                <i class="bi bi-clock"></i> 
+                                                <strong>2:00 PM - 4:00 PM</strong>
+                                            </p>
+                                            <p class="text-muted mb-2">
+                                                <i class="bi bi-chat-left-text"></i> 
+                                                Diligencia bancaria
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="bi bi-clock"></i> Aprobado el 3 de Oct, 2025
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendario de ausencias -->
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Calendario de Ausencias</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Vista de tus ausencias aprobadas en el calendario
+                        </div>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-calendar-check text-success"></i> 20 - 25 Octubre</span>
+                                <span class="badge bg-success">Vacaciones</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-calendar-check text-success"></i> 10 Octubre (2-4 PM)</span>
+                                <span class="badge bg-info">Horas Específicas</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cancelar Solicitud -->
+    <div class="modal fade" id="cancelarModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-trash"></i> Cancelar Solicitud</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas cancelar esta solicitud de ausencia?</p>
+                    <div class="alert alert-warning">
+                        <strong>Fecha:</strong> 15 de Octubre 2025<br>
+                        <strong>Tipo:</strong> Día Completo<br>
+                        <strong>Estado:</strong> Pendiente
+                    </div>
+                    <p class="text-muted">Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, mantener</button>
+                    <button type="button" class="btn btn-danger">Sí, cancelar solicitud</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2025 Barbería Estilo. Panel del Barbero - Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Mostrar/ocultar campos según tipo de ausencia
+        document.getElementById('tipoAusencia').addEventListener('change', function() {
+            const horasGroup = document.getElementById('horasGroup');
+            if (this.value === 'HORAS_ESPECIFICAS') {
+                horasGroup.style.display = 'block';
+            } else {
+                horasGroup.style.display = 'none';
+            }
+        });
+
+        // Filtros de solicitudes
+        document.querySelectorAll('input[name="filtroEstado"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                console.log('Filtrar por:', this.id);
+                // Aquí se implementaría el filtrado de las solicitudes
+            });
+        });
+    </script>
+</body>
+</html>

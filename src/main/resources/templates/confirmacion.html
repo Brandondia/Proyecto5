@@ -1,45 +1,41 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"> <!-- Se declara el uso de Thymeleaf -->
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8"> <!-- Codificación de caracteres -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Para diseño responsivo -->
-    <title>Reserva Confirmada - Barbería</title> <!-- Título en la pestaña del navegador -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva Confirmada - Barbería</title>
 
-    <!-- Enlace al CSS de Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Estilos personalizados -->
     <style>
         .confirmation-card {
-            max-width: 600px; /* Ancho máximo */
-            margin: 0 auto; /* Centrado horizontal */
+            max-width: 600px;
+            margin: 0 auto;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1); /* Sombra suave */
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
         .success-icon {
-            font-size: 5rem; /* Ícono grande */
-            color: #198754;  /* Verde éxito */
+            font-size: 5rem;
+            color: #198754;
         }
     </style>
 </head>
-<body class="bg-light"> <!-- Fondo gris claro -->
+<body class="bg-light">
 
-    <!-- Barra de navegación superior -->
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="/">Barbería Estilo</a>
-            <!-- Botón de menú para móviles -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <!-- Opciones de navegación -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
                     <li class="nav-item"><a class="nav-link" href="/reserva">Reservar</a></li>
                     <li class="nav-item"><a class="nav-link" href="/reserva/mis-reservas">Mis Reservas</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/login/logout">Cerrar Sesión</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/logout">Cerrar Sesión</a></li>
                 </ul>
             </div>
         </div>
@@ -48,71 +44,79 @@
     <!-- Contenido principal -->
     <div class="container py-5">
         <div class="confirmation-card bg-white">
-            
-            <!-- Encabezado con ícono de éxito -->
-            <div class="text-center mb-4">
+
+            <!-- Mensaje principal -->
+            <div class="text-center mb-4" th:if="${mensaje}">
                 <div class="success-icon">✓</div>
                 <h2>¡Reserva Confirmada!</h2>
-                <!-- Mensaje dinámico desde el controlador -->
                 <p class="text-muted" th:text="${mensaje}">Tu reserva ha sido confirmada con éxito.</p>
             </div>
-            
+
+            <!-- Mensaje alternativo si se entra directo sin confirmar -->
+            <div class="text-center mb-4" th:if="${mensaje == null}">
+                <div class="text-danger" style="font-size:3rem;">⚠</div>
+                <h3>No hay datos de reserva</h3>
+                <p class="text-muted">Por favor realiza una nueva reserva.</p>
+                <a href="/reserva" class="btn btn-primary mt-3">Ir a Reservar</a>
+            </div>
+
             <!-- Detalles de la reserva -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Detalles de tu Reserva</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Información del corte -->
-                        <div class="col-md-6">
-                            <p><strong>Corte:</strong> <span th:text="${corte.nombre}">Corte Clásico</span></p>
-                            <p><strong>Precio:</strong> <span th:text="'$' + ${corte.precio}">$20.00</span></p>
-                        </div>
-                        <!-- Información del barbero y la fecha -->
-                        <div class="col-md-6">
-                            <p><strong>Barbero:</strong> <span th:text="${barbero.nombre}">Juan Pérez</span></p>
-                            <p><strong>Fecha y Hora:</strong> <span th:text="${#temporals.format(turno.fechaHora, 'dd/MM/yyyy HH:mm')}">01/05/2025 15:30</span></p>
+            <div th:if="${reserva != null}">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Detalles de tu Reserva</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Corte:</strong> <span th:text="${corte?.nombre}">Corte Clásico</span></p>
+                                <p><strong>Precio:</strong> <span th:text="'$' + ${corte?.precio}">$20.00</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Barbero:</strong> <span th:text="${barbero?.nombre}">Juan Pérez</span></p>
+                                <p><strong>Fecha y Hora:</strong>
+                                    <span th:text="${#temporals.format(turno?.fechaHora, 'dd/MM/yyyy HH:mm')}">
+                                        01/05/2025 15:30
+                                    </span>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Instrucciones para el cliente -->
-            <div class="alert alert-info">
-                <h5>Instrucciones:</h5>
-                <ul>
-                    <li>Llega 10 minutos antes de tu cita.</li>
-                    <li>Si necesitas cancelar, hazlo con al menos 2 horas de anticipación.</li>
-                    <li>Para cualquier consulta, llámanos al (123) 456-7890.</li>
-                </ul>
-            </div>
-            
-            <!-- Botones de navegación -->
-            <div class="text-center mt-4">
-                <a href="/" class="btn btn-primary">Volver al Inicio</a>
-                <a href="/reserva/mis-reservas" class="btn btn-outline-primary ms-2">Ver Mis Reservas</a>
+
+                <!-- Instrucciones -->
+                <div class="alert alert-info">
+                    <h5>Instrucciones:</h5>
+                    <ul>
+                        <li>Llega 10 minutos antes de tu cita.</li>
+                        <li>Si necesitas cancelar, hazlo con al menos 2 horas de anticipación.</li>
+                        <li>Para cualquier consulta, llámanos al (123) 456-7890.</li>
+                    </ul>
+                </div>
+
+                <!-- Botones -->
+                <div class="text-center mt-4">
+                    <a href="/" class="btn btn-primary">Volver al Inicio</a>
+                    <a href="/reserva/mis-reservas" class="btn btn-outline-primary ms-2">Ver Mis Reservas</a>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Pie de página -->
+    <!-- Footer -->
     <footer class="bg-dark text-white py-4">
         <div class="container">
             <div class="row">
-                <!-- Información del negocio -->
                 <div class="col-md-4">
                     <h5>Barbería Estilo</h5>
                     <p>El mejor lugar para tu corte de cabello y barba.</p>
                 </div>
-                <!-- Información de contacto -->
                 <div class="col-md-4">
                     <h5>Contacto</h5>
                     <p>Dirección: Av. Principal 123<br>
                     Teléfono: (123) 456-7890<br>
                     Email: info@barberiaestilo.com</p>
                 </div>
-                <!-- Horarios de atención -->
                 <div class="col-md-4">
                     <h5>Horarios</h5>
                     <p>Lunes a Viernes: 9:00 AM - 8:00 PM<br>
@@ -120,14 +124,12 @@
                     Domingos: Cerrado</p>
                 </div>
             </div>
-            <!-- Créditos -->
             <div class="text-center mt-4">
                 <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Script para funcionalidad de Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

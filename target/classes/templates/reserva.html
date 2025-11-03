@@ -102,9 +102,6 @@
                         <a class="nav-link" href="/">Inicio</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/registro">Registrarse</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link active" href="/reserva">Reservar</a>
                     </li>
                     <li class="nav-item">
@@ -552,5 +549,24 @@
             }
         });
     </script>
+
+    <script>
+    // Evita envíos múltiples del formulario
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("reservaForm");
+        const submitBtn = form.querySelector('button[type="submit"]');
+        let enviado = false;
+
+        form.addEventListener("submit", function(e) {
+            if (enviado) {
+                e.preventDefault(); // Evita segundo envío
+                return;
+            }
+            enviado = true;
+            submitBtn.disabled = true; // Desactiva el botón
+            submitBtn.textContent = "Procesando..."; // Feedback visual
+        });
+    });
+</script>
 </body>
 </html>

@@ -1,42 +1,51 @@
 package com.pa.spring.prueba1.pa_prueba1.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity // Marca esta clase como una entidad JPA para mapear a una tabla en la base de datos.
-@Data // Genera automáticamente getters, setters, toString, equals y hashCode con Lombok.
+@Entity
+@Getter @Setter
+@EqualsAndHashCode(of = "idTurno")
+@ToString(of = {"idTurno", "fechaHora", "estado"}) // no imprime barbero ni reservas
 public class Turno {
 
-    @Id // Indica que este campo es la clave primaria.
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Se genera automáticamente con autoincremento.
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idTurno;
 
-    private LocalDateTime fechaHora; // Fecha y hora exacta del turno.
+    private LocalDateTime fechaHora;
 
-    @Enumerated(EnumType.STRING) // Almacena el enum como texto ("DISPONIBLE", "NO_DISPONIBLE") en lugar de como ordinal (0, 1).
-    private EstadoTurno estado = EstadoTurno.DISPONIBLE; // Estado por defecto: disponible.
+    @Enumerated(EnumType.STRING)
+    private EstadoTurno estado = EstadoTurno.DISPONIBLE;
 
-    @ManyToOne // Muchos turnos pueden estar asociados a un mismo barbero.
-    @JoinColumn(name = "idBarbero", referencedColumnName = "idBarbero") // Llave foránea que une con Barbero.
+    @ManyToOne(fetch = FetchType.LAZY)           // ⬅️ evita cargar el barbero siempre
+    @JoinColumn(name = "idBarbero", referencedColumnName = "idBarbero")
+    @JsonIgnore                                  // evita ciclos al serializar
     private Barbero barbero;
 
-    @OneToMany(mappedBy = "turno", cascade = CascadeType.ALL, fetch = FetchType.LAZY) // Un turno puede tener muchas reservas.
-    private List<Reserva> reservas = new ArrayList<>(); // Lista de reservas asociadas a este turno.
+    @OneToMany(mappedBy = "turno", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference                        // permite serializar reservas si se quiere
+    private List<Reserva> reservas = new ArrayList<>();
 
-    // Método para agregar una reserva a la lista y establecer la relación bidireccional.
     public void addReserva(Reserva reserva) {
         reservas.add(reserva);
-        reserva.setTurno(this); // Asegura la relación de vuelta.
+        reserva.setTurno(this);
     }
 
-    // Enum para definir los posibles estados de un turno.
     public enum EstadoTurno {
         DISPONIBLE,
         NO_DISPONIBLE
     }
 }
+
+
 

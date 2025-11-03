@@ -23,6 +23,27 @@
         .service-card:hover {
             transform: translateY(-10px);
         }
+    /* Estilos para la sección principal (Hero) con imagen de fondo */
+    .hero-section {
+        background-image: url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        padding: 150px 0;
+    }
+    /* Efecto de hover en las tarjetas de los servicios */
+    .service-card {
+        transition: transform 0.3s;
+    }
+    .service-card:hover {
+        transform: translateY(-10px);
+    }
+    /* AGREGAR ESTO: */
+    .card-img-top {
+        height: 250px;
+        object-fit: cover;
+    }
     </style>
 </head>
 <body>
@@ -52,11 +73,7 @@
                         <a class="nav-link" href="/reserva">Reservar</a>
                     </li>
                     <li class="nav-item" th:if="${clienteLogueado != null}">
-                        <a class="nav-link" href="/login/logout">Cerrar Sesión</a>
-                    </li>
-                    <!-- Enlace al panel de administración -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/login">Administración</a>
+                        <a class="nav-link" th:href="@{/logout}">Cerrar Sesión</a>
                     </li>
                 </ul>
             </div>

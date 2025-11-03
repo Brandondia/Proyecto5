@@ -1,10 +1,15 @@
 package com.pa.spring.prueba1.pa_prueba1.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @Entity
-@Data
+@Getter @Setter
+@EqualsAndHashCode(of = "idCliente")      // solo compara por ID
+@ToString(of = {"idCliente", "nombre", "correo"}) // evita imprimir relaciones
 public class Cliente {
 
     @Id
@@ -14,11 +19,11 @@ public class Cliente {
     @Column(nullable = false)
     private String nombre;
 
-    @Column(unique = true, nullable = false) 
-    private String correo; // será nuestro "username" en login
+    @Column(unique = true, nullable = false)
+    private String correo;  // será el "username" en login
 
     @Column(nullable = false)
-    private String clave; // contraseña (se guarda encriptada con BCrypt)
+    private String clave;   // contraseña encriptada con BCrypt
 
     private String telefono;
 
@@ -26,5 +31,6 @@ public class Cliente {
 
     private String rol = "ROLE_USER"; // por defecto todos serán USER
 }
+
 
 

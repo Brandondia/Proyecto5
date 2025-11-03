@@ -1,43 +1,137 @@
 package com.pa.spring.prueba1.pa_prueba1.model;
 
-import jakarta.persistence.*; // Importaciones para las anotaciones JPA
-import lombok.Data; // Lombok para la generación automática de métodos getter, setter, etc.
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.time.DayOfWeek; // Para representar días de la semana
-import java.time.LocalTime; // Para representar horas específicas
-import java.util.ArrayList; // Lista dinámica
-import java.util.List; // Interfaz de lista
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
-@Entity // Marca la clase como una entidad JPA para mapeo a una tabla en la base de datos
-@Data // Lombok genera automáticamente los métodos getter, setter, equals, hashCode y toString
+@Entity
+@Getter @Setter
 public class Barbero {
 
-    @Id // Define el campo como el identificador de la entidad
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // El valor del ID se genera automáticamente, típicamente en bases de datos con auto incremento
-    private Long idBarbero; // Identificador único del barbero
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long idBarbero;
+
+    // ==================== INFORMACIÓN BÁSICA ====================
     
-    private String nombre; // Nombre completo del barbero
-    private String especialidad; // Especialidad o área de enfoque del barbero (por ejemplo, cortes, afeitado, etc.)
+    @Column(nullable = false)
+    private String nombre;
+
+    private String apellido;
+
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    private String telefono;
+
+    @Column(nullable = false)
+    private String password;
+
+    // ==================== INFORMACIÓN PERSONAL ====================
     
-    // Día libre del barbero (1 = Lunes, 7 = Domingo)
-    private DayOfWeek diaLibre = DayOfWeek.SUNDAY; // El día libre predeterminado es el domingo
+    @Column(unique = true)
+    private String documento;
     
-    // Hora de inicio de jornada (por defecto 9:00 AM)
-    private LocalTime horaInicio = LocalTime.of(9, 0); 
+    private LocalDate fechaNacimiento;
     
-    // Hora de fin de jornada (por defecto 6:00 PM)
-    private LocalTime horaFin = LocalTime.of(18, 0); 
+    private String direccion;
+
+    // ==================== INFORMACIÓN PROFESIONAL ====================
     
-    // Hora de inicio de almuerzo (por defecto 1:00 PM)
-    private LocalTime horaInicioAlmuerzo = LocalTime.of(13, 0); 
+    private String especialidad;
     
-    // Hora de fin de almuerzo (por defecto 3:00 PM)
-    private LocalTime horaFinAlmuerzo = LocalTime.of(15, 0); 
+    private Integer experienciaAnios;
     
-    // Duración de cada turno en minutos (por defecto 30 minutos)
-    private int duracionTurno = 30; 
+    private LocalDate fechaIngreso;
     
-    // Relación con la entidad Turno (un barbero tiene muchos turnos)
-    @OneToMany(mappedBy = "barbero", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Turno> turnos = new ArrayList<>(); // Lista de turnos del barbero
+    @Column(columnDefinition = "TEXT")
+    private String certificaciones;
+
+    // ==================== CONFIGURACIÓN DE HORARIO ====================
+    
+    @Enumerated(EnumType.STRING)
+    private DayOfWeek diaLibre;
+
+    private LocalTime horaInicio;
+    private LocalTime horaFin;
+    private LocalTime horaInicioAlmuerzo;
+    private LocalTime horaFinAlmuerzo;
+    
+    private Integer duracionTurno; // en minutos
+
+    // ==================== PERFIL Y SEGURIDAD ====================
+    
+    private String fotoPerfil;
+    
+    private LocalDateTime ultimaSesion;
+    
+    @Column(nullable = false)
+    private Boolean autenticacionDosPasos = false;
+
+    /**
+     * Rol del usuario para Spring Security.
+     * CRÍTICO: Este campo es necesario para la autenticación.
+     * Por defecto: ROLE_BARBERO
+     */
+    @Column(nullable = false)
+    private String rol = "ROLE_BARBERO";
+
+    // ==================== PREFERENCIAS DE NOTIFICACIONES ====================
+    
+    @Column(nullable = false)
+    private Boolean notifReservas = true;
+    
+    @Column(nullable = false)
+    private Boolean notifCancelaciones = true;
+    
+    @Column(nullable = false)
+    private Boolean notifRecordatorios = true;
+
+    // ==================== ESTADO ====================
+    
+    @Column(nullable = false)
+    private boolean activo = true;
+
+    // ==================== CONSTRUCTOR ====================
+    
+    public Barbero() {
+    }
+
+    // ==================== MÉTODOS AUXILIARES ====================
+    
+    /**
+     * Obtiene el nombre completo del barbero
+     */
+    public String getNombreCompleto() {
+        if (apellido != null && !apellido.isEmpty()) {
+            return nombre + " " + apellido;
+        }
+        return nombre;
+    }
+    
+    /**
+     * Verifica si el barbero tiene foto de perfil personalizada
+     */
+    public boolean tieneFotoPerfil() {
+        return fotoPerfil != null && !fotoPerfil.isEmpty();
+    }
+    
+    /**
+     * Verifica si el barbero está disponible en un día específico
+     */
+    public boolean estaDisponibleEnDia(DayOfWeek dia) {
+        return activo && !dia.equals(diaLibre);
+    }
+    
+    /**
+     * Verifica si tiene configuración de horario completa
+     */
+    public boolean tieneHorarioCompleto() {
+        return horaInicio != null && horaFin != null && duracionTurno != null;
+    }
 }

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Estadísticas - Panel del Barbero</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .stats-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: none;
+            transition: all 0.3s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        .metric-box {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .metric-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        .period-selector {
+            margin-bottom: 20px;
+        }
+        .ranking-item {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+        .ranking-item:hover {
+            background: #f8f9fa;
+            border-color: #0d6efd;
+        }
+        .ranking-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .progress-custom {
+            height: 25px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/barbero/panel">Panel del Barbero</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/panel">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/reservas">Mis Reservas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/horario">Mi Horario</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/ausencias">Ausencias</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <span th:text="${nombreBarbero}">Barbero</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/barbero/perfil"><i class="bi bi-person"></i> Mi Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="bi bi-graph-up"></i> Mis Estadísticas</h1>
+                <p class="text-muted">Análisis de tu desempeño y rendimiento</p>
+            </div>
+            <a href="/barbero/panel" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <!-- Selector de Período -->
+        <div class="period-selector">
+            <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="periodo" id="semana" checked>
+                <label class="btn btn-outline-primary" for="semana">
+                    <i class="bi bi-calendar-week"></i> Esta Semana
+                </label>
+                
+                <input type="radio" class="btn-check" name="periodo" id="mes">
+                <label class="btn btn-outline-primary" for="mes">
+                    <i class="bi bi-calendar-month"></i> Este Mes
+                </label>
+                
+                <input type="radio" class="btn-check" name="periodo" id="trimestre">
+                <label class="btn btn-outline-primary" for="trimestre">
+                    <i class="bi bi-calendar3"></i> Trimestre
+                </label>
+                
+                <input type="radio" class="btn-check" name="periodo" id="anio">
+                <label class="btn btn-outline-primary" for="anio">
+                    <i class="bi bi-calendar-event"></i> Este Año
+                </label>
+            </div>
+        </div>
+
+        <!-- Métricas Principales -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-icon text-primary">
+                        <i class="bi bi-scissors"></i>
+                    </div>
+                    <div class="metric-value text-primary" th:text="${totalCortes}">48</div>
+                    <div class="metric-label">Total Cortes</div>
+                    <small class="text-success">
+                        <i class="bi bi-arrow-up"></i> +12% vs mes anterior
+                    </small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-icon text-success">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div class="metric-value text-success">$1.2M</div>
+                    <div class="metric-label">Ingresos Generados</div>
+                    <small class="text-success">
+                        <i class="bi bi-arrow-up"></i> +8% vs mes anterior
+                    </small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-icon text-warning">
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <div class="metric-value text-warning">4.8</div>
+                    <div class="metric-label">Valoración Promedio</div>
+                    <small class="text-muted">124 valoraciones</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-box">
+                    <div class="metric-icon text-info">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="metric-value text-info">42</div>
+                    <div class="metric-label">Clientes Atendidos</div>
+                    <small class="text-info">
+                        <i class="bi bi-arrow-up"></i> 6 nuevos clientes
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Gráfico de Cortes por Día -->
+            <div class="col-lg-8 mb-4">
+                <div class="card stats-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Cortes por Día</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="cortesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribución de Servicios -->
+            <div class="col-lg-4 mb-4">
+                <div class="card stats-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Servicios Más Solicitados</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="serviciosChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Ingresos Mensuales -->
+            <div class="col-lg-8 mb-4">
+                <div class="card stats-card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Ingresos Mensuales</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="ingresosChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Valoraciones -->
+            <div class="col-lg-4 mb-4">
+                <div class="card stats-card">
+                    <div class="card-header bg-warning text-white">
+                        <h5 class="mb-0"><i class="bi bi-star"></i> Valoraciones</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>5 Estrellas</span>
+                                <span class="text-muted">85</span>
+                            </div>
+                            <div class="progress progress-custom">
+                                <div class="progress-bar bg-success" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>4 Estrellas</span>
+                                <span class="text-muted">28</span>
+                            </div>
+                            <div class="progress progress-custom">
+                                <div class="progress-bar bg-info" style="width: 28%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>3 Estrellas</span>
+                                <span class="text-muted">8</span>
+                            </div>
+                            <div class="progress progress-custom">
+                                <div class="progress-bar bg-warning" style="width: 8%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>2 Estrellas</span>
+                                <span class="text-muted">2</span>
+                            </div>
+                            <div class="progress progress-custom">
+                                <div class="progress-bar bg-danger" style="width: 2%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>1 Estrella</span>
+                                <span class="text-muted">1</span>
+                            </div>
+                            <div class="progress progress-custom">
+                                <div class="progress-bar bg-danger" style="width: 1%"></div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="text-center">
+                            <h3 class="text-warning mb-0">4.8 / 5.0</h3>
+                            <small class="text-muted">Promedio General</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Top Servicios -->
+            <div class="col-lg-6 mb-4">
+                <div class="card stats-card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-trophy"></i> Top Servicios del Mes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="ranking-item">
+                            <div class="d-flex align-items-center">
+                                <div class="ranking-number bg-warning text-white me-3">1</div>
+                                <div class="flex-grow-1">
+                                    <strong>Corte Clásico</strong>
+                                    <div class="progress mt-2">
+                                        <div class="progress-bar bg-warning" style="width: 85%"></div>
+                                    </div>
+                                </div>
+                                <div class="ms-3 text-end">
+                                    <strong>18 cortes</strong>
+                                    <div><small class="text-muted">$450,000</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ranking-item">
+                            <div class="d-flex align-items-center">
+                                <div class="ranking-number bg-secondary text-white me-3">2</div>
+                                <div class="flex-grow-1">
+                                    <strong>Fade</strong>
+                                    <div class="progress mt-2">
+                                        <div class="progress-bar bg-secondary" style="width: 65%"></div>
+                                    </div>
+                                </div>
+                                <div class="ms-3 text-end">
+                                    <strong>14 cortes</strong>
+                                    <div><small class="text-muted">$420,000</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ranking-item">
+                            <div class="d-flex align-items-center">
+                                <div class="ranking-number bg-info text-white me-3">3</div>
+                                <div class="flex-grow-1">
+                                    <strong>Corte + Barba</strong>
+                                    <div class="progress mt-2">
+                                        <div class="progress-bar bg-info" style="width: 50%"></div>
+                                    </div>
+                                </div>
+                                <div class="ms-3 text-end">
+                                    <strong>10 cortes</strong>
+                                    <div><small class="text-muted">$350,000</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ranking-item">
+                            <div class="d-flex align-items-center">
+                                <div class="ranking-number bg-light text-dark me-3">4</div>
+                                <div class="flex-grow-1">
+                                    <strong>Degradado</strong>
+                                    <div class="progress mt-2">
+                                        <div class="progress-bar" style="width: 30%"></div>
+                                    </div>
+                                </div>
+                                <div class="ms-3 text-end">
+                                    <strong>6 cortes</strong>
+                                    <div><small class="text-muted">$180,000</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Horarios Más Ocupados -->
+            <div class="col-lg-6 mb-4">
+                <div class="card stats-card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Horarios Más Ocupados</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="horariosChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparativa y Objetivos -->
+        <div class="row">
+            <div class="col-lg-12 mb-4">
+                <div class="card stats-card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-bullseye"></i> Objetivos del Mes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <h6>Cortes Realizados</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>48 / 60</span>
+                                    <span class="text-primary">80%</span>
+                                </div>
+                                <div class="progress progress-custom">
+                                    <div class="progress-bar bg-primary" style="width: 80%"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6>Ingresos Objetivo</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>$1.2M / $1.5M</span>
+                                    <span class="text-success">80%</span>
+                                </div>
+                                <div class="progress progress-custom">
+                                    <div class="progress-bar bg-success" style="width: 80%"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6>Valoración Objetivo</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>4.8 / 4.5</span>
+                                    <span class="text-warning">106%</span>
+                                </div>
+                                <div class="progress progress-custom">
+                                    <div class="progress-bar bg-warning" style="width: 100%"></div>
+                                </div>
+                                <small class="text-success"><i class="bi bi-check-circle"></i> ¡Objetivo Superado!</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botón de Exportar -->
+        <div class="text-center mb-4">
+            <button class="btn btn-primary btn-lg" onclick="exportarEstadisticas()">
+                <i class="bi bi-download"></i> Exportar Reporte PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2025 Barbería Estilo. Panel del Barbero - Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Gráfico de Cortes por Día
+        const ctx1 = document.getElementById('cortesChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                datasets: [{
+                    label: 'Cortes',
+                    data: [8, 10, 7, 9, 12, 6, 0],
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Gráfico de Servicios
+        const ctx2 = document.getElementById('serviciosChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Corte Clásico', 'Fade', 'Corte+Barba', 'Degradado', 'Otros'],
+                datasets: [{
+                    data: [30, 25, 20, 15, 10],
+                    backgroundColor: [
+                        '#0d6efd',
+                        '#28a745',
+                        '#ffc107',
+                        '#dc3545',
+                        '#6c757d'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de Ingresos
+        const ctx3 = document.getElementById('ingresosChart').getContext('2d');
+        new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Ingresos',
+                    data: [900000, 1100000, 1000000, 1300000, 1150000, 1200000],
+                    backgroundColor: '#17a2b8',
+                    borderColor: '#17a2b8',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Gráfico de Horarios
+        const ctx4 = document.getElementById('horariosChart').getContext('2d');
+        new Chart(ctx4, {
+            type: 'bar',
+            data: {
+                labels: ['8-10am', '10-12pm', '12-2pm', '2-4pm', '4-6pm', '6-8pm'],
+                datasets: [{
+                    label: 'Reservas',
+                    data: [5, 8, 3, 10, 12, 7],
+                    backgroundColor: '#28a745'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        function exportarEstadisticas() {
+            alert('Generando reporte PDF...');
+            // Aquí se implementaría la lógica para exportar a PDF
+        }
+
+        // Cambio de período
+        document.querySelectorAll('input[name="periodo"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                console.log('Período cambiado a:', this.id);
+                // Aquí se actualizarían los gráficos según el período seleccionado
+            });
+        });
+    </script>
+</body>
+</html>

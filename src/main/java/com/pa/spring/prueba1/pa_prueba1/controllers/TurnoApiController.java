@@ -2,8 +2,9 @@ package com.pa.spring.prueba1.pa_prueba1.controllers;
 
 import com.pa.spring.prueba1.pa_prueba1.model.Barbero;
 import com.pa.spring.prueba1.pa_prueba1.model.Turno;
-import com.pa.spring.prueba1.pa_prueba1.service.BarberoService;
 import com.pa.spring.prueba1.pa_prueba1.service.TurnoService;
+import com.pa.spring.prueba1.pa_prueba1.service.barbero.BarberoService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

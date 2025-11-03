@@ -2,6 +2,8 @@ package com.pa.spring.prueba1.pa_prueba1.controllers;
 
 import com.pa.spring.prueba1.pa_prueba1.model.*;
 import com.pa.spring.prueba1.pa_prueba1.service.*;
+import com.pa.spring.prueba1.pa_prueba1.service.barbero.BarberoService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
@@ -33,12 +35,9 @@ public class ReservaController {
 
     // Mostrar página de reserva
     @GetMapping
-    public String mostrarPaginaReserva(Model model, 
-                                       @AuthenticationPrincipal User user) {
-        // Obtener cliente autenticado
+    public String mostrarPaginaReserva(Model model, @AuthenticationPrincipal User user) {
         Cliente cliente = clienteService.obtenerPorCorreo(user.getUsername());
 
-        // Listar cortes y barberos
         List<CorteDeCabello> cortes = corteDeCabelloService.obtenerTodos();
         List<Barbero> barberos = barberoService.obtenerTodos();
 
@@ -56,7 +55,7 @@ public class ReservaController {
         return turnoService.obtenerTurnosDisponiblesPorBarbero(barberoId);
     }
 
-    // Confirmar reserva
+    // Confirmar reserva (usa PRG para evitar duplicados)
     @PostMapping("/confirmar")
     public String confirmarReserva(
             @RequestParam Long corteId,
@@ -64,12 +63,11 @@ public class ReservaController {
             @RequestParam Long turnoId,
             @RequestParam(required = false) String comentarios,
             @AuthenticationPrincipal User user,
-            Model model,
             RedirectAttributes redirectAttributes) {
 
         Cliente cliente = clienteService.obtenerPorCorreo(user.getUsername());
 
-        // Verificar turno disponible
+        // Verificar si el turno sigue disponible
         if (!turnoService.esTurnoDisponible(turnoId)) {
             redirectAttributes.addFlashAttribute("error",
                     "El turno seleccionado ya no está disponible. Intenta con otro horario.");
@@ -91,21 +89,27 @@ public class ReservaController {
             return "redirect:/reserva";
         }
 
-        // Pasar datos de confirmación
-        model.addAttribute("mensaje", "¡Reserva confirmada con éxito!");
-        model.addAttribute("reserva", reserva);
-        model.addAttribute("cliente", cliente);
-        model.addAttribute("corte", corteDeCabelloService.obtenerPorId(corteId));
-        model.addAttribute("barbero", barberoService.obtenerPorId(barberoId));
-        model.addAttribute("turno", turnoService.obtenerPorId(turnoId));
+        // Pasar datos a la vista de confirmación usando redirect
+        redirectAttributes.addFlashAttribute("mensaje", "¡Reserva confirmada con éxito!");
+        redirectAttributes.addFlashAttribute("reserva", reserva);
+        redirectAttributes.addFlashAttribute("cliente", cliente);
+        redirectAttributes.addFlashAttribute("corte", corteDeCabelloService.obtenerPorId(corteId));
+        redirectAttributes.addFlashAttribute("barbero", barberoService.obtenerPorId(barberoId));
+        redirectAttributes.addFlashAttribute("turno", turnoService.obtenerPorId(turnoId));
 
+        // Redirigir para romper el ciclo del POST (PRG)
+        return "redirect:/reserva/confirmacion";
+    }
+
+    // Página de confirmación (se muestra después del redirect)
+    @GetMapping("/confirmacion")
+    public String mostrarConfirmacion() {
         return "confirmacion";
     }
 
     // Ver reservas del cliente
     @GetMapping("/mis-reservas")
-    public String misReservas(Model model,
-                              @AuthenticationPrincipal User user) {
+    public String misReservas(Model model, @AuthenticationPrincipal User user) {
         Cliente cliente = clienteService.obtenerPorCorreo(user.getUsername());
         List<Reserva> reservas = reservaService.obtenerPorCliente(cliente.getIdCliente());
 
@@ -131,5 +135,6 @@ public class ReservaController {
         return "redirect:/reserva/mis-reservas";
     }
 }
+
 
 

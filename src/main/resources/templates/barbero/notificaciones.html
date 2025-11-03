@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notificaciones - Panel del Barbero</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .notification-card {
+            border-left: 4px solid #0d6efd;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+        .notification-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+        .notification-card.unread {
+            background-color: #f8f9fa;
+            border-left-color: #0d6efd;
+        }
+        .notification-card.read {
+            border-left-color: #e0e0e0;
+        }
+        .notification-card.success {
+            border-left-color: #28a745;
+        }
+        .notification-card.warning {
+            border-left-color: #ffc107;
+        }
+        .notification-card.danger {
+            border-left-color: #dc3545;
+        }
+        .notification-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .notification-time {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #dc3545;
+            border: 2px solid white;
+        }
+        .filter-tabs .nav-link {
+            color: #6c757d;
+            border: none;
+            border-bottom: 3px solid transparent;
+        }
+        .filter-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom: 3px solid #0d6efd;
+            background: none;
+        }
+        .stats-summary {
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        .empty-state i {
+            font-size: 4rem;
+            opacity: 0.3;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/barbero/panel">Panel del Barbero</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/panel">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/reservas">Mis Reservas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/horario">Mi Horario</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/barbero/ausencias">Ausencias</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <span th:text="${nombreBarbero}">Barbero</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/barbero/perfil"><i class="bi bi-person"></i> Mi Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="bi bi-bell"></i> Notificaciones</h1>
+                <p class="text-muted">Centro de alertas y mensajes importantes</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-primary me-2" onclick="marcarTodasLeidas()">
+                    <i class="bi bi-check-all"></i> Marcar todas como leídas
+                </button>
+                <a href="/barbero/panel" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </a>
+            </div>
+        </div>
+
+        <!-- Resumen de Notificaciones -->
+        <div class="stats-summary">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-2">Tienes <strong id="countNoLeidas">5</strong> notificaciones sin leer</h4>
+                    <p class="mb-0">Mantente al día con tus reservas, cambios y solicitudes</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end gap-3">
+                        <div>
+                            <h3 class="mb-0" th:text="${totalNotificaciones}">12</h3>
+                            <small>Total</small>
+                        </div>
+                        <div>
+                            <h3 class="mb-0" th:text="${noLeidas}">5</h3>
+                            <small>Sin leer</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <ul class="nav nav-tabs filter-tabs mb-4" id="notificacionesTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="todas-tab" data-bs-toggle="tab" data-bs-target="#todas" type="button">
+                    <i class="bi bi-list-ul"></i> Todas <span class="badge bg-primary ms-2">12</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="noLeidas-tab" data-bs-toggle="tab" data-bs-target="#noLeidas" type="button">
+                    <i class="bi bi-envelope"></i> No Leídas <span class="badge bg-danger ms-2">5</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="reservas-tab" data-bs-toggle="tab" data-bs-target="#reservas" type="button">
+                    <i class="bi bi-calendar-check"></i> Reservas <span class="badge bg-info ms-2">6</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ausencias-tab" data-bs-toggle="tab" data-bs-target="#ausencias" type="button">
+                    <i class="bi bi-calendar-x"></i> Ausencias <span class="badge bg-warning ms-2">2</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sistema-tab" data-bs-toggle="tab" data-bs-target="#sistema" type="button">
+                    <i class="bi bi-gear"></i> Sistema <span class="badge bg-secondary ms-2">4</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- Contenido de Notificaciones -->
+        <div class="tab-content" id="notificacionesTabContent">
+            <!-- Tab Todas -->
+            <div class="tab-pane fade show active" id="todas" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <!-- Notificación Nueva Reserva (No leída) -->
+                        <div class="card notification-card unread" onclick="marcarLeida(this)">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="notification-icon bg-primary text-white position-relative">
+                                            <i class="bi bi-calendar-plus"></i>
+                                            <span class="notification-badge"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1"><strong>Nueva Reserva</strong></h6>
+                                        <p class="mb-1">Carlos Rodríguez ha reservado un corte para mañana a las 10:00 AM</p>
+                                        <div class="notification-time">
+                                            <i class="bi bi-clock"></i> Hace 5 minutos
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-outline-primary">Ver Detalles</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notificación Cancelación (No leída) -->
+                        <div class="card notification-card unread danger" onclick="marcarLeida(this)">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="notification-icon bg-danger text-white position-relative">
+                                            <i class="bi bi-x-circle"></i>
+                                            <span class="notification-badge"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1"><strong>Reserva Cancelada</strong></h6>
+                                        <p class="mb-1">Juan Pérez ha cancelado su reserva del 8 de Octubre a las 2:00 PM</p>
+                                        <div class="notification-time">
+                                            <i class="bi bi-clock"></i> Hace 1 hora
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-outline-danger">Ver Motivo</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notificación Ausencia Aprobada (No leída) -->
+                        <div class="card notification-card unread success" onclick="marcarLeida(this)">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="notification-icon bg-success text-white position-relative">
+                                            <i class="bi bi-check-circle"></i>
+                                            <span class="notification-badge"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1"><strong>Ausencia Aprobada</strong></h6>
+                                        <p class="mb-1">Tu solicitud de ausencia para el 15 de Octubre ha sido aprobada</p>
+                                        <div class="notification-time">
+                                            <i class="bi bi-clock"></i> Hace 2 horas
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-outline-success">Ver Detalles</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notificación Recordatorio (No leída) -->
+                        <div class="card notification-card unread warning" onclick="marcarLeida(this)">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="notification-icon bg-warning text-white position-relative">
+                                            <i class="bi bi-alarm"></i>
+                                            <span class="notification-badge"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1"><strong>Recordatorio de Cita</strong></h6>
+                                        <p class="mb-1">Tienes 3 reservas pendientes para hoy. La próxima es a las 3:00 PM</p>
+                                        <div class="notification-time">
+                                            <i class="bi bi-clock"></i> Hace 3 horas
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-outline-warning">Ver Agenda</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notificación Valoración (No leída) -->
+                        <div class="card notification-card unread" onclick="marcarLeida(this)">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="notification-icon bg-info text-white position-relative">
+                                            <i class="bi bi-star-fill"></i>
+                                            <span class="notification-badge"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1"><strong>Nueva Valoración</strong></h6>
+                                        <p class="mb-1">María García te ha dado 5 estrellas y dejó un comentario positivo</p>
+                                        <div class="notification-time">
+                                            <i class="bi bi-clock"></i> Hace 5 horas
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <button class="btn btn-sm btn-outline-info">Leer Comentario</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notificaciones Leídas -->
+                        <div class="card notification-card read" onclick="marcarLeida(this)">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="notification-icon bg-secondary text-white">
+                                            <i class="bi bi-calendar-check"></i>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1">Reserva Confirmada</h6>
+                                        <p class="mb-1 text-muted">Pedro Martínez confirmó su reserva para el 10 de Octubre</p>
+                                        <div class="notification-time">
+                                            <i class="bi bi-clock"></i> Ayer
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card notification-card read">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="notification-icon bg-secondary text-white">
+                                            <i class="bi bi-gear"></i>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1">Actualización del Sistema</h6>
+                                        <p class="mb-1 text-muted">Se ha actualizado el sistema de reservas con nuevas funciones</p>
+                                        <div class="notification-time">
+                                            <i class="bi bi-clock"></i> Hace 2 días
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card notification-card read">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="notification-icon bg-secondary text-white">
+                                            <i class="bi bi-trophy"></i>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1">¡Felicitaciones!</h6>
+                                        <p class="mb-1 text-muted">Has alcanzado 100 cortes este mes. ¡Excelente trabajo!</p>
+                                        <div class="notification-time">
+                                            <i class="bi bi-clock"></i> Hace 3 días
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card notification-card read">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="notification-icon bg-secondary text-white">
+                                            <i class="bi bi-cash"></i>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1">Pago Procesado</h6>
+                                        <p class="mb-1 text-muted">Tu pago de $1,200,000 ha sido procesado correctamente</p>
+                                        <div class="notification-time">
+                                            <i class="bi bi-clock"></i> Hace 5 días
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paginación -->
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Anterior</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Siguiente</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Tab No Leídas -->
+            <div class="tab-pane fade" id="noLeidas" role="tabpanel">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Mostrando solo notificaciones no leídas
+                </div>
+                <!-- Aquí se mostrarían solo las notificaciones no leídas -->
+                <p class="text-center text-muted py-4">Cargando notificaciones no leídas...</p>
+            </div>
+
+            <!-- Tab Reservas -->
+            <div class="tab-pane fade" id="reservas" role="tabpanel">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Notificaciones relacionadas con reservas
+                </div>
+                <p class="text-center text-muted py-4">Cargando notificaciones de reservas...</p>
+            </div>
+
+            <!-- Tab Ausencias -->
+            <div class="tab-pane fade" id="ausencias" role="tabpanel">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Notificaciones sobre solicitudes de ausencia
+                </div>
+                <p class="text-center text-muted py-4">Cargando notificaciones de ausencias...</p>
+            </div>
+
+            <!-- Tab Sistema -->
+            <div class="tab-pane fade" id="sistema" role="tabpanel">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Actualizaciones y mensajes del sistema
+                </div>
+                <p class="text-center text-muted py-4">Cargando notificaciones del sistema...</p>
+            </div>
+        </div>
+
+        <!-- Configuración de Notificaciones -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-sliders"></i> Configuración de Notificaciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Notificaciones por Email</h6>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="emailReservas" checked>
+                            <label class="form-check-label" for="emailReservas">
+                                Nuevas reservas
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="emailCancelaciones" checked>
+                            <label class="form-check-label" for="emailCancelaciones">
+                                Cancelaciones
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="emailRecordatorios" checked>
+                            <label class="form-check-label" for="emailRecordatorios">
+                                Recordatorios de citas
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="emailValoraciones" checked>
+                            <label class="form-check-label" for="emailValoraciones">
+                                Nuevas valoraciones
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Notificaciones Push</h6>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="pushReservas" checked>
+                            <label class="form-check-label" for="pushReservas">
+                                Nuevas reservas
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="pushCancelaciones" checked>
+                            <label class="form-check-label" for="pushCancelaciones">
+                                Cancelaciones
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="pushRecordatorios">
+                            <label class="form-check-label" for="pushRecordatorios">
+                                Recordatorios de citas
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="pushSistema">
+                            <label class="form-check-label" for="pushSistema">
+                                Actualizaciones del sistema
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="text-end">
+                    <button class="btn btn-primary">
+                        <i class="bi bi-save"></i> Guardar Configuración
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2025 Barbería Estilo. Panel del Barbero - Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function marcarLeida(elemento) {
+            if (elemento.classList.contains('unread')) {
+                elemento.classList.remove('unread');
+                elemento.classList.add('read');
+                
+                // Remover el badge rojo
+                const badge = elemento.querySelector('.notification-badge');
+                if (badge) {
+                    badge.remove();
+                }
+                
+                // Actualizar contador
+                const countNoLeidas = document.getElementById('countNoLeidas');
+                const currentCount = parseInt(countNoLeidas.textContent);
+                countNoLeidas.textContent = Math.max(0, currentCount - 1);
+            }
+        }
+
+        function marcarTodasLeidas() {
+            const notificacionesNoLeidas = document.querySelectorAll('.notification-card.unread');
+            notificacionesNoLeidas.forEach(notif => {
+                notif.classList.remove('unread');
+                notif.classList.add('read');
+                const badge = notif.querySelector('.notification-badge');
+                if (badge) badge.remove();
+            });
+            
+            document.getElementById('countNoLeidas').textContent = '0';
+            
+            // Mostrar mensaje de éxito
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show';
+            alert.innerHTML = `
+                <i class="bi bi-check-circle-fill"></i> Todas las notificaciones han sido marcadas como leídas
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container').insertBefore(alert, document.querySelector('.stats-summary'));
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

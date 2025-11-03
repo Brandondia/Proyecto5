@@ -1,35 +1,218 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"> <!-- Declaración del espacio de nombres para Thymeleaf -->
+<html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <meta charset="UTF-8"> <!-- Codificación de caracteres -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Vista adaptable a dispositivos -->
-    <title>Gestión de Turnos - Barbería</title> <!-- Título de la pestaña del navegador -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Turnos - Barbería</title>
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .stats-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .stats-icon {
+            font-size: 2.5rem;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .filter-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .table-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* Vista semanal */
+        #weekTable {
+            font-size: 0.8rem;
+        }
+
+        #weekTable th {
+            text-align: center;
+            vertical-align: middle;
+            font-weight: 600;
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0b5ed7;
+            padding: 0.5rem;
+        }
+
+        #weekTable td {
+            vertical-align: top;
+            padding: 0.3rem;
+            border-color: #dee2e6;
+        }
+
+        .time-cell {
+            font-weight: 600;
+            color: white;
+            text-align: center;
+            background-color: #0d6efd;
+            white-space: nowrap;
+            border-color: #0b5ed7;
+        }
+
+        .turno-slot {
+            background: white;
+            border-radius: 4px;
+            padding: 0.25rem 0.4rem;
+            margin-bottom: 0.25rem;
+            font-size: 0.7rem;
+            border-left: 3px solid #dee2e6;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .turno-slot:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,.2);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        .turno-slot.disponible {
+            border-left-color: #198754;
+            background-color: #d1e7dd;
+        }
+
+        .turno-slot.no-disponible {
+            border-left-color: #ffc107;
+            background-color: #fff3cd;
+        }
+
+        .turno-slot-time {
+            font-weight: 700;
+            color: #212529;
+            display: block;
+            line-height: 1.2;
+        }
+
+        .turno-slot-barbero {
+            color: #6c757d;
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+            font-size: 0.65rem;
+        }
+
+        .turno-slot-actions {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 0.3rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,.15);
+            z-index: 1000;
+            margin-top: 2px;
+        }
+
+        .turno-slot:hover .turno-slot-actions {
+            display: flex;
+            gap: 0.2rem;
+            flex-direction: column;
+        }
+
+        .day-header-cell {
+            padding: 0.5rem !important;
+        }
+
+        .day-name-text {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            display: block;
+            font-weight: 600;
+        }
+
+        .day-date-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .day-month-text {
+            font-size: 0.65rem;
+        }
+
+        .today-header {
+            background-color: #0b5ed7 !important;
+        }
+
+        .empty-day-cell {
+            text-align: center;
+            color: #adb5bd;
+            font-size: 0.7rem;
+            padding: 0.5rem;
+        }
+
+        .week-scroll-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-right: 1rem;
+        }
+
+        .legend-item.disponible {
+            background-color: #d1e7dd;
+            border-left: 3px solid #198754;
+        }
+
+        .legend-item.no-disponible {
+            background-color: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+    </style>
 </head>
 
 <body>
     <!-- ========== NAVBAR ========== -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <!-- Título/logo del panel -->
-            <a class="navbar-brand" href="/admin">Panel de Administración</a>
+            <a class="navbar-brand" href="/admin/home">Panel de Administración</a>
 
-            <!-- Botón colapsable para pantallas pequeñas -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <!-- Enlaces del menú -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin">Dashboard</a>
+                        <a class="nav-link" href="/admin/panel">Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/barberos">Barberos</a>
@@ -38,146 +221,176 @@
                         <a class="nav-link" href="/admin/cortes">Servicios</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/admin/turnos">Turnos</a> <!-- Página actual -->
+                        <a class="nav-link active" href="/admin/turnos">Turnos</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/reservas">Reservas</a>
                     </li>
-                        <li><a class="nav-link" href="/admin/login/logout"> Cerrar Sesión</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
     <!-- ========== CONTENIDO PRINCIPAL ========== -->
-    <div class="container py-5">
-        <!-- Título y botones -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Gestión de Turnos</h1>
-            <div>
-                <!-- Botón para ver turnos disponibles -->
-                <a href="/admin/turnos/disponibles" class="btn btn-success me-2">
-                    <i class="bi bi-check-circle"></i> Ver Disponibles
-                </a>
-                <!-- Botón para ver turnos no disponibles -->
-                <a href="/admin/turnos/no-disponibles" class="btn btn-warning">
-                    <i class="bi bi-x-circle"></i> Ver No Disponibles
-                </a>
+    <div class="container py-4">
+        
+        <!-- Título -->
+        <div class="mb-3">
+            <h1><i class="bi bi-calendar-week me-2"></i>Gestión de Turnos</h1>
+        </div>
+
+        <!-- ========== ESTADÍSTICAS RÁPIDAS ========== -->
+        <div class="row mb-3" th:if="${turnos != null}">
+            <div class="col-md-4 mb-2">
+                <div class="card stats-card h-100">
+                    <div class="card-body d-flex align-items-center py-3">
+                        <div class="stats-icon bg-primary text-white">
+                            <i class="bi bi-calendar3"></i>
+                        </div>
+                        <div>
+                            <h6 class="card-subtitle mb-1 text-muted">Total Turnos</h6>
+                            <h3 class="card-title mb-0" th:text="${turnos.size()}">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <div class="card stats-card h-100">
+                    <div class="card-body d-flex align-items-center py-3">
+                        <div class="stats-icon bg-success text-white">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <div>
+                            <h6 class="card-subtitle mb-1 text-muted">Disponibles</h6>
+                            <h3 class="card-title mb-0 text-success" 
+                                th:text="${#lists.size(turnos.?[estado.name() == 'DISPONIBLE'])}">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <div class="card stats-card h-100">
+                    <div class="card-body d-flex align-items-center py-3">
+                        <div class="stats-icon bg-warning text-white">
+                            <i class="bi bi-x-circle"></i>
+                        </div>
+                        <div>
+                            <h6 class="card-subtitle mb-1 text-muted">No Disponibles</h6>
+                            <h3 class="card-title mb-0 text-warning" 
+                                th:text="${#lists.size(turnos.?[estado.name() == 'NO_DISPONIBLE'])}">0</h3>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- ========== MENSAJES DE ALERTA ========== -->
-
-        <!-- Mensaje de éxito -->
         <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
-            <span th:text="${mensaje}"></span> <!-- Texto dinámico del mensaje -->
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <span th:text="${mensaje}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <!-- Mensaje de error -->
         <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span th:text="${error}"></span> <!-- Texto dinámico del error -->
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <!-- ========== FORMULARIO DE FILTRO ========== -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <form th:action="@{/admin/turnos/filtrar}" method="get" class="row g-3">
-                    <!-- Filtro por barbero -->
-                    <div class="col-md-4">
-                        <label for="barberoId" class="form-label">Barbero</label>
-                        <select class="form-select" id="barberoId" name="barberoId">
-                            <option value="">Todos</option>
-                            <option th:each="barbero : ${barberos}"
+        <!-- ========== FILTROS Y CONTROLES ========== -->
+        <div class="card filter-card mb-3">
+            <div class="card-body py-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold mb-1">
+                            <i class="bi bi-person me-1"></i>Filtrar por Barbero
+                        </label>
+                        <select class="form-select form-select-sm" id="barberoFilter">
+                            <option value="">Todos los barberos</option>
+                            <option th:each="barbero : ${barberos}" 
                                     th:value="${barbero.idBarbero}"
-                                    th:text="${barbero.nombre}"
-                                    th:selected="${barbero.idBarbero == filtroBarberoId}">
-                                Juan Pérez
+                                    th:text="${barbero.nombre}">
                             </option>
                         </select>
                     </div>
 
-                    <!-- Filtro por estado -->
-                    <div class="col-md-4">
-                        <label for="estado" class="form-label">Estado</label>
-                        <select class="form-select" id="estado" name="estado">
-                            <option value="">Todos</option>
-                            <option value="DISPONIBLE" th:selected="${filtroEstado == 'DISPONIBLE'}">Disponible</option>
-                            <option value="NO_DISPONIBLE" th:selected="${filtroEstado == 'NO_DISPONIBLE'}">No Disponible</option>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold mb-1">
+                            <i class="bi bi-filter me-1"></i>Filtrar por Estado
+                        </label>
+                        <select class="form-select form-select-sm" id="estadoFilter">
+                            <option value="">Todos los estados</option>
+                            <option value="DISPONIBLE">✅ Disponibles</option>
+                            <option value="NO_DISPONIBLE">⚠️ No Disponibles</option>
                         </select>
                     </div>
 
-                    <!-- Botón filtrar -->
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-filter"></i> Filtrar
-                        </button>
+                    <div class="col-md-6 text-end">
+                        <label class="form-label fw-semibold mb-1">Navegación Semanal</label>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="prevWeek">
+                                <i class="bi bi-chevron-left"></i> Anterior
+                            </button>
+                            <button type="button" class="btn btn-primary btn-sm" id="currentWeek">
+                                <i class="bi bi-calendar-today me-1"></i>Esta Semana
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="nextWeek">
+                                Siguiente <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
                     </div>
-                </form>
+                </div>
+
+                <!-- Leyenda -->
+                <div class="mt-3 pt-3 border-top">
+                    <small class="text-muted fw-semibold me-3">Leyenda:</small>
+                    <span class="legend-item disponible">
+                        <i class="bi bi-check-circle"></i> Disponible
+                    </span>
+                    <span class="legend-item no-disponible">
+                        <i class="bi bi-x-circle"></i> No Disponible
+                    </span>
+                    <small class="text-muted ms-3">
+                        <i class="bi bi-info-circle me-1"></i>Pasa el cursor sobre un turno para ver las acciones
+                    </small>
+                </div>
             </div>
         </div>
 
-        <!-- ========== TABLA DE TURNOS ========== -->
-        <div class="card">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+        <!-- ========== CALENDARIO SEMANAL ========== -->
+        <div class="card table-card">
+            <div class="card-header bg-primary text-white py-2">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-week me-2"></i>Calendario Semanal de Turnos
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="week-scroll-container">
+                    <table class="table table-bordered mb-0" id="weekTable" style="min-width: 900px;">
                         <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Hora</th>
-                                <th>Barbero</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                            <tr id="weekDays">
+                                <th class="time-cell" style="width: 70px;">Hora</th>
+                                <!-- Los días se generarán con JavaScript -->
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Recorre la lista de turnos -->
-                            <tr th:each="turno : ${turnos}">
-                                <td th:text="${turno.idTurno}">1</td>
-                                <td th:text="${#temporals.format(turno.fechaHora, 'dd/MM/yyyy')}">01/01/2025</td>
-                                <td th:text="${#temporals.format(turno.fechaHora, 'HH:mm')}">10:00</td>
-                                <td th:text="${turno.barbero != null ? turno.barbero.nombre : 'N/A'}">Barbero</td>
-
-                                <!-- Estado del turno con color -->
-                                <td>
-                                    <span th:class="${'badge ' + (turno.estado.name() == 'DISPONIBLE' ? 'bg-success' : 'bg-warning')}">
-                                        <span th:text="${turno.estado}">Estado</span>
-                                    </span>
-                                </td>
-
-                                <!-- Acciones por turno -->
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <!-- Marcar como no disponible -->
-                                        <a th:if="${turno.estado.name() == 'DISPONIBLE'}"
-                                           th:href="@{'/admin/turnos/marcar-no-disponible/' + ${turno.idTurno}}"
-                                           class="btn btn-warning btn-sm">
-                                            <i class="bi bi-x-circle"></i> Marcar No Disponible
-                                        </a>
-
-                                        <!-- Marcar como disponible -->
-                                        <a th:if="${turno.estado.name() == 'NO_DISPONIBLE'}"
-                                           th:href="@{'/admin/turnos/marcar-disponible/' + ${turno.idTurno}}"
-                                           class="btn btn-success btn-sm">
-                                            <i class="bi bi-check-circle"></i> Marcar Disponible
-                                        </a>
-
-                                        <!-- Eliminar turno -->
-                                        <a th:href="@{'/admin/turnos/eliminar/' + ${turno.idTurno}}"
-                                           class="btn btn-danger btn-sm"
-                                           onclick="return confirm('¿Estás seguro de eliminar este turno?')">
-                                            <i class="bi bi-trash"></i> Eliminar
-                                        </a>
+                        <tbody id="weekBody">
+                            <tr>
+                                <td colspan="8" class="text-center p-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
                                     </div>
+                                    <p class="mt-2 text-muted">Cargando turnos...</p>
                                 </td>
-                            </tr>
-
-                            <!-- Mensaje si no hay turnos -->
-                            <tr th:if="${turnos.empty}">
-                                <td colspan="6" class="text-center">No hay turnos registrados</td>
                             </tr>
                         </tbody>
                     </table>
@@ -187,25 +400,229 @@
     </div>
 
     <!-- ========== FOOTER ========== -->
-    <footer class="bg-dark text-white py-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <!-- Información del panel -->
-                <div class="col-md-6">
-                    <h5>Barbería Estilo - Panel de Administración</h5>
-                    <p>Sistema de gestión para administradores.</p>
-                </div>
-            </div>
-
-            <!-- Derechos de autor -->
-            <div class="text-center mt-4">
-                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
-            </div>
+    <footer class="bg-dark text-white py-3 mt-4">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
         </div>
     </footer>
 
-    <!-- Scripts de Bootstrap (JS) -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let turnosData = [];
+        let currentWeekStart = new Date();
+        let selectedBarberoId = '';
+        let selectedEstado = '';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Cargar turnos desde la tabla HTML renderizada por Thymeleaf
+            cargarTurnosDesdeHTML();
+            
+            console.log('Turnos cargados:', turnosData.length);
+            
+            if (turnosData.length > 0) {
+                renderWeekView();
+            }
+            
+            // Event listeners
+            document.getElementById('barberoFilter')?.addEventListener('change', (e) => {
+                selectedBarberoId = e.target.value;
+                renderWeekView();
+            });
+            
+            document.getElementById('estadoFilter')?.addEventListener('change', (e) => {
+                selectedEstado = e.target.value;
+                renderWeekView();
+            });
+            
+            document.getElementById('prevWeek')?.addEventListener('click', () => {
+                currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+                renderWeekView();
+            });
+            
+            document.getElementById('nextWeek')?.addEventListener('click', () => {
+                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                renderWeekView();
+            });
+            
+            document.getElementById('currentWeek')?.addEventListener('click', () => {
+                currentWeekStart = new Date();
+                renderWeekView();
+            });
+        });
+        
+        function cargarTurnosDesdeHTML() {
+            // Leer desde los inputs hidden
+            document.querySelectorAll('input[data-turno-id]').forEach(input => {
+                try {
+                    const turno = {
+                        idTurno: parseInt(input.dataset.turnoId),
+                        fechaHora: input.dataset.turnoFecha,
+                        barbero: {
+                            idBarbero: parseInt(input.dataset.turnoBarberoId) || null,
+                            nombre: input.dataset.turnoBarberoNombre || 'Sin asignar'
+                        },
+                        estado: input.dataset.turnoEstado
+                    };
+                    turnosData.push(turno);
+                } catch (e) {
+                    console.error('Error al parsear turno:', e);
+                }
+            });
+        }
+        
+        function formatTime(dateStr) {
+            const date = new Date(dateStr);
+            return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        }
+        
+        function getDayName(date) {
+            return ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'][date.getDay()];
+        }
+        
+        function getMonthName(date) {
+            return ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
+        }
+        
+        function renderWeekView() {
+            const weekDays = document.getElementById('weekDays');
+            const weekBody = document.getElementById('weekBody');
+            if (!weekDays || !weekBody) return;
+            
+            weekDays.innerHTML = '<th class="time-cell">Hora</th>';
+            weekBody.innerHTML = '';
+            
+            // Obtener inicio de semana (lunes)
+            const start = new Date(currentWeekStart);
+            const day = start.getDay();
+            const diff = start.getDate() - day + (day === 0 ? -6 : 1);
+            start.setDate(diff);
+            start.setHours(0, 0, 0, 0);
+            
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(start);
+                date.setDate(date.getDate() + i);
+                weekDates.push(date);
+                
+                const isToday = date.toDateString() === new Date().toDateString();
+                const th = document.createElement('th');
+                th.className = `day-header-cell ${isToday ? 'today-header' : ''}`;
+                th.innerHTML = `
+                    <span class="day-name-text">${getDayName(date)}</span>
+                    <span class="day-date-text">${date.getDate()}</span>
+                    <span class="day-month-text">${getMonthName(date)}</span>
+                    ${isToday ? '<br><span class="badge bg-light text-primary" style="font-size: 0.6rem; padding: 0.1rem 0.3rem;">Hoy</span>' : ''}
+                `;
+                weekDays.appendChild(th);
+            }
+            
+            // Filtrar turnos
+            let filteredTurnos = turnosData;
+            if (selectedBarberoId) {
+                filteredTurnos = filteredTurnos.filter(t => 
+                    t.barbero?.idBarbero == selectedBarberoId
+                );
+            }
+            if (selectedEstado) {
+                filteredTurnos = filteredTurnos.filter(t => t.estado === selectedEstado);
+            }
+            
+            // Agrupar turnos por hora
+            const turnosByHour = {};
+            filteredTurnos.forEach(turno => {
+                const date = new Date(turno.fechaHora);
+                const hour = date.getHours();
+                
+                if (!turnosByHour[hour]) {
+                    turnosByHour[hour] = {};
+                    weekDates.forEach(d => {
+                        turnosByHour[hour][d.toDateString()] = [];
+                    });
+                }
+                
+                const turnoDateStr = date.toDateString();
+                if (turnosByHour[hour][turnoDateStr]) {
+                    turnosByHour[hour][turnoDateStr].push(turno);
+                }
+            });
+            
+            const hours = Object.keys(turnosByHour).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            if (hours.length === 0) {
+                weekBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center p-5">
+                            <i class="bi bi-calendar-x" style="font-size: 3rem; color: #dee2e6;"></i>
+                            <p class="text-muted mt-3">No hay turnos para mostrar en esta semana</p>
+                            <small class="text-muted">Intenta cambiar los filtros o navegar a otra semana</small>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            hours.forEach(hour => {
+                const tr = document.createElement('tr');
+                
+                const hourCell = document.createElement('td');
+                hourCell.className = 'time-cell';
+                hourCell.textContent = `${String(hour).padStart(2, '0')}:00`;
+                tr.appendChild(hourCell);
+                
+                weekDates.forEach(date => {
+                    const td = document.createElement('td');
+                    const dateStr = date.toDateString();
+                    const turnos = turnosByHour[hour][dateStr] || [];
+                    
+                    if (turnos.length === 0) {
+                        td.innerHTML = '<span style="color: #e9ecef; font-weight: bold;">·</span>';
+                    } else {
+                        turnos.forEach(turno => {
+                            const disponible = turno.estado === 'DISPONIBLE';
+                            const div = document.createElement('div');
+                            div.className = `turno-slot ${disponible ? 'disponible' : 'no-disponible'}`;
+                            div.innerHTML = `
+                                <span class="turno-slot-time">${formatTime(turno.fechaHora)}</span>
+                                <span class="turno-slot-barbero">${turno.barbero?.nombre || 'N/A'}</span>
+                                <div class="turno-slot-actions">
+                                    <a href="/admin/turnos/${disponible ? 'marcar-no-disponible' : 'marcar-disponible'}/${turno.idTurno}"
+                                       class="btn btn-${disponible ? 'warning' : 'success'} btn-sm w-100"
+                                       style="font-size: 0.7rem; padding: 0.2rem;">
+                                        <i class="bi bi-${disponible ? 'x' : 'check'}-circle"></i> 
+                                        ${disponible ? 'Bloquear' : 'Liberar'}
+                                    </a>
+                                    <a href="/admin/turnos/eliminar/${turno.idTurno}"
+                                       class="btn btn-danger btn-sm w-100"
+                                       style="font-size: 0.7rem; padding: 0.2rem;"
+                                       onclick="return confirm('¿Eliminar este turno?')">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </a>
+                                </div>
+                            `;
+                            td.appendChild(div);
+                        });
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                
+                weekBody.appendChild(tr);
+            });
+        }
+    </script>
+    
+    <!-- Hidden data for JavaScript -->
+    <div style="display: none;">
+        <input th:each="turno : ${turnos}" 
+               type="hidden" 
+               th:attr="data-turno-id=${turno.idTurno},
+                       data-turno-fecha=${turno.fechaHora},
+                       data-turno-barbero-id=${turno.barbero != null ? turno.barbero.idBarbero : 0},
+                       data-turno-barbero-nombre=${turno.barbero != null ? turno.barbero.nombre : 'Sin asignar'},
+                       data-turno-estado=${turno.estado.name()}" />
+    </div>
 </body>
 
 </html>

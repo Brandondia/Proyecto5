@@ -75,64 +75,64 @@ public class ReservaServiceImpl implements ReservaService {
     
     // Crear una nueva reserva con las relaciones cliente, barbero, corte, y turno
     @Override
-    @Transactional
-    public Reserva crearReserva(Long idCliente, Long idBarbero, Long idCorte, Long idTurno, String comentarios) {
-        try {
-            // Verificar que existan todas las entidades necesarias
-            Optional<Cliente> optCliente = clienteRepository.findById(idCliente);
-            Optional<Barbero> optBarbero = barberoRepository.findById(idBarbero);
-            Optional<CorteDeCabello> optCorte = corteRepository.findById(idCorte);
-            Optional<Turno> optTurno = turnoRepository.findById(idTurno);
-            
-            System.out.println("Creando reserva: Cliente=" + optCliente.isPresent() + 
-                              ", Barbero=" + optBarbero.isPresent() + 
-                              ", Corte=" + optCorte.isPresent() + 
-                              ", Turno=" + optTurno.isPresent());
-            
-            if (!optCliente.isPresent() || !optBarbero.isPresent() || 
-                !optCorte.isPresent() || !optTurno.isPresent()) {
-                System.out.println("Error: Alguna de las entidades no existe");
-                return null;
-            }
-            
-            Cliente cliente = optCliente.get();
-            Barbero barbero = optBarbero.get();
-            CorteDeCabello corte = optCorte.get();
-            Turno turno = optTurno.get();
-            
-            // Verificar que el turno esté disponible
-            if (turno.getEstado() != Turno.EstadoTurno.DISPONIBLE) {
-                System.out.println("Error: El turno no está disponible");
-                return null;
-            }
-            
-            // Crear la reserva
-            Reserva reserva = new Reserva();
-            reserva.setCliente(cliente);
-            reserva.setBarbero(barbero);
-            reserva.setCorte(corte);
-            reserva.setTurno(turno);
-            reserva.setFechaHoraReserva(LocalDateTime.now());
-            reserva.setFechaHoraTurno(turno.getFechaHora());
-            reserva.setEstado(Reserva.EstadoReserva.PENDIENTE);
-            reserva.setComentarios(comentarios);
-            
-            // Marcar el turno como no disponible
-            turno.setEstado(Turno.EstadoTurno.NO_DISPONIBLE);
-            turno.addReserva(reserva); // Establecer la relación bidireccional
-            turnoRepository.save(turno);
-            
-            // Guardar la reserva en la base de datos
-            Reserva reservaGuardada = reservaRepository.save(reserva);
-            System.out.println("Reserva guardada con ID: " + reservaGuardada.getIdReserva());
-            
-            return reservaGuardada;
-        } catch (Exception e) {
-            System.out.println("Error al crear reserva: " + e.getMessage());
-            e.printStackTrace();
-            throw e; // Re-lanzar la excepción para manejarla en el controlador
+@Transactional
+public Reserva crearReserva(Long idCliente, Long idBarbero, Long idCorte, Long idTurno, String comentarios) {
+    try {
+        // Buscar entidades necesarias
+        Cliente cliente = clienteRepository.findById(idCliente).orElse(null);
+        Barbero barbero = barberoRepository.findById(idBarbero).orElse(null);
+        CorteDeCabello corte = corteRepository.findById(idCorte).orElse(null);
+        Turno turno = turnoRepository.findById(idTurno).orElse(null);
+
+        if (cliente == null || barbero == null || corte == null || turno == null) {
+            System.out.println("Error: Falta alguna entidad requerida");
+            return null;
         }
+
+        // Evitar reservas duplicadas para el mismo turno
+        boolean yaExiste = reservaRepository
+                .findByTurnoIdTurno(idTurno)
+                .stream()
+                .anyMatch(r -> r.getEstado() == Reserva.EstadoReserva.PENDIENTE);
+        if (yaExiste) {
+            System.out.println("⚠️ Ya existe una reserva pendiente para este turno.");
+            return null;
+        }
+
+        // Validar disponibilidad
+        if (turno.getEstado() != Turno.EstadoTurno.DISPONIBLE) {
+            System.out.println("Error: El turno no está disponible");
+            return null;
+        }
+
+        // Crear y guardar la reserva
+        Reserva reserva = new Reserva();
+        reserva.setCliente(cliente);
+        reserva.setBarbero(barbero);
+        reserva.setCorte(corte);
+        reserva.setTurno(turno);
+        reserva.setFechaHoraReserva(LocalDateTime.now());
+        reserva.setFechaHoraTurno(turno.getFechaHora());
+        reserva.setEstado(Reserva.EstadoReserva.PENDIENTE);
+        reserva.setComentarios(comentarios);
+
+        // Guardar la reserva primero
+        Reserva reservaGuardada = reservaRepository.save(reserva);
+
+        // Luego actualizar el turno sin cascada
+        turno.setEstado(Turno.EstadoTurno.NO_DISPONIBLE);
+        turnoRepository.save(turno);
+
+        System.out.println("✅ Reserva creada correctamente con ID: " + reservaGuardada.getIdReserva());
+        return reservaGuardada;
+
+    } catch (Exception e) {
+        System.out.println("❌ Error al crear reserva: " + e.getMessage());
+        e.printStackTrace();
+        throw e;
     }
+}
+
     
     // Completar una reserva (cambiar su estado a COMPLETADA)
     @Override

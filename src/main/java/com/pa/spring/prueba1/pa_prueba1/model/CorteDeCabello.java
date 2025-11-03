@@ -16,4 +16,5 @@ public class CorteDeCabello {
 
     private String nombre; // Nombre del corte, por ejemplo: "Corte Clásico"
     private double precio; // Precio del corte en moneda local
+    private int duracion; // Duración del corte en minutos 
 }

@@ -1,7 +1,6 @@
 package com.pa.spring.prueba1.pa_prueba1.security;
 
 import com.pa.spring.prueba1.pa_prueba1.model.Usuario;
-import com.pa.spring.prueba1.pa_prueba1.model.Rol;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -35,25 +34,18 @@ public class CustomUserDetails implements UserDetails {
     }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true; // puedes agregar lógica si quieres controlar expiración
-    }
+    public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true; // puedes agregar lógica si controlas bloqueo
-    }
+    public boolean isAccountNonLocked() { return true; }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true; // idem arriba
-    }
+    public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() {
-        return true; // puedes agregar campo "activo" en Usuario si lo necesitas
-    }
+    public boolean isEnabled() { return usuario.isActivo(); }
 }
+
 
 
 

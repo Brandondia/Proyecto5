@@ -27,7 +27,7 @@ public class RegistroController {
 
     @GetMapping
     public String mostrarFormularioRegistro(Model model) {
-        // Si ya está autenticado, mejor mandarlo a reservas directamente
+        // Si ya está autenticado, mandarlo a reservas directamente
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             return "redirect:/reserva";
@@ -41,9 +41,8 @@ public class RegistroController {
     public String registrarCliente(@ModelAttribute("cliente") Cliente cliente,
                                    RedirectAttributes redirectAttributes) {
 
-        // Validar correo único
-        boolean existeCorreo = clienteRepository.findByCorreo(cliente.getCorreo()).isPresent();
-        if (existeCorreo) {
+        // Validar si ya existe el correo
+        if (clienteRepository.existsByCorreo(cliente.getCorreo())) {
             redirectAttributes.addFlashAttribute("error", "Ya existe un usuario con este correo. Por favor, inicia sesión.");
             return "redirect:/registro";
         }
@@ -60,11 +59,12 @@ public class RegistroController {
         // Guardar
         clienteRepository.save(cliente);
 
-        // MUY IMPORTANTE: no meter nada manual en sesión; dejar que Spring Security maneje el login
         redirectAttributes.addFlashAttribute("mensaje", "¡Registro exitoso! Ahora inicia sesión con tu correo y contraseña.");
         return "redirect:/login";
     }
 }
+
+
 
 
 

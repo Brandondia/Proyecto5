@@ -9,9 +9,14 @@ import java.util.Optional;
 @Repository
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
-    // Buscar cliente por correo (para login)
+    // Para buscar un cliente por correo
     Optional<Cliente> findByCorreo(String correo);
+
+    // Para verificar existencia rápida por correo
+    boolean existsByCorreo(String correo);
 }
+
+
 
 
 
