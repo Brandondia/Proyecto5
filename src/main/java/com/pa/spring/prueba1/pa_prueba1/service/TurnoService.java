@@ -7,37 +7,76 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TurnoService {
-    List<Turno> obtenerTurnosPorBarbero(Long idBarbero);
-    List<Turno> obtenerTurnosDisponiblesPorBarbero(Long idBarbero);
-    List<Turno> obtenerTurnosNoDisponiblesPorBarbero(Long idBarbero);
-    List<Turno> obtenerTurnosPorBarberoYEstado(Long idBarbero, Turno.EstadoTurno estado);
-    List<Turno> obtenerTurnosDisponibles();
-    List<Turno> obtenerTurnosNoDisponibles();
-    Turno guardarTurno(Turno turno);
-    void eliminarTurno(Long id);
-    Turno obtenerPorId(Long id);
     
-    // Método para generar turnos disponibles para un barbero en un rango de fechas
-    List<Turno> generarTurnosDisponibles(Barbero barbero, LocalDate fechaInicio, LocalDate fechaFin);
-    
-    // Método para verificar si un turno está disponible
-    boolean esTurnoDisponible(Long idTurno);
-    
-    // Método para marcar un turno como no disponible
-    Turno marcarTurnoNoDisponible(Long idTurno);
-    
-    // Método para marcar un turno como disponible
-    Turno marcarTurnoDisponible(Long idTurno);
-    
-    // Método para obtener todos los turnos
+    // ===== MÉTODOS BÁSICOS =====
     List<Turno> obtenerTodos();
     
-    // Método para completar un turno (usado cuando se completa una reserva)
+    Turno obtenerPorId(Long id);
+    
+    Turno guardarTurno(Turno turno);
+    
+    void eliminarTurno(Long id);
+    
+    // ===== MÉTODOS POR BARBERO =====
+    List<Turno> obtenerTurnosPorBarbero(Long idBarbero);
+    
+    List<Turno> obtenerPorBarbero(Long idBarbero);
+    
+    List<Turno> obtenerTurnosDisponiblesPorBarbero(Long idBarbero);
+    
+    List<Turno> obtenerTurnosNoDisponiblesPorBarbero(Long idBarbero);
+    
+    List<Turno> obtenerTurnosPorBarberoYEstado(Long idBarbero, Turno.EstadoTurno estado);
+    
+    List<Turno> obtenerTurnosDisponiblesPorBarberoYFecha(Long idBarbero, LocalDate fecha);
+    
+    // ===== NUEVO: MÉTODO PARA MANEJAR DIFERENTES DURACIONES =====
+    /**
+     * Obtiene turnos disponibles considerando la duración del servicio
+     * Para servicios de 30 min: devuelve todos los turnos disponibles
+     * Para servicios más largos: solo devuelve turnos que tienen suficiente espacio consecutivo
+     */
+    List<Turno> obtenerTurnosDisponiblesPorDuracionYBarbero(Long barberoId, Integer duracionMinutos);
+    
+    // ===== MÉTODOS POR ESTADO =====
+    List<Turno> obtenerTurnosDisponibles();
+    
+    List<Turno> obtenerTurnosNoDisponibles();
+    
+    // ===== MÉTODOS POR RANGO DE FECHAS =====
+    List<Turno> obtenerPorRangoFechas(LocalDateTime inicio, LocalDateTime fin);
+    
+    List<Turno> obtenerTurnosPorRangoFechas(LocalDate fechaInicio, LocalDate fechaFin);
+    
+    List<Turno> obtenerTurnosPorBarberoYRangoFechas(Long barberoId, LocalDate fechaInicio, LocalDate fechaFin);
+    
+    List<Turno> obtenerTurnosPorEstadoYRangoFechas(Turno.EstadoTurno estado, LocalDate fechaInicio, LocalDate fechaFin);
+    
+    List<Turno> obtenerTurnosPorBarberoYEstadoYRangoFechas(Long barberoId, Turno.EstadoTurno estado, LocalDate fechaInicio, LocalDate fechaFin);
+    
+    // ===== MÉTODOS PARA CAMBIAR ESTADO =====
+    boolean esTurnoDisponible(Long idTurno);
+    
+    Turno cambiarEstadoTurno(Long idTurno, Turno.EstadoTurno nuevoEstado);
+    
+    Turno marcarTurnoNoDisponible(Long idTurno);
+    
+    Turno marcarTurnoDisponible(Long idTurno);
+    
     Turno completarTurno(Long idTurno);
     
-    // Método para cancelar una reserva (liberar el turno)
     Turno cancelarReserva(Long idTurno);
     
-    // Método para obtener turnos disponibles por barbero y fecha
-    List<Turno> obtenerTurnosDisponiblesPorBarberoYFecha(Long idBarbero, LocalDate fecha);
+    // ===== MÉTODOS PARA CREAR Y ACTUALIZAR =====
+    Turno crearTurno(Turno turno);
+    
+    Turno actualizarTurno(Turno turno);
+    
+    // ===== GENERACIÓN AUTOMÁTICA DE TURNOS =====
+    List<Turno> generarTurnosDisponibles(Barbero barbero, LocalDate fechaInicio, LocalDate fechaFin);
+    
+    List<Turno> generarTurnosAutomaticos(Long idBarbero, LocalDateTime fechaInicio, LocalDateTime fechaFin);
+    
+    // ===== MÉTODOS ADICIONALES =====
+    List<Turno> listarTurnosPorBarbero(Long idBarbero);
 }

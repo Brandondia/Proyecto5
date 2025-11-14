@@ -11,14 +11,14 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="/admin">Panel de Administración</a>
+            <a class="navbar-brand" href="/admin/home">Panel de Administración</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin">Dashboard</a>
+                        <a class="nav-link" href="/admin/panel">Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" href="/admin/barberos">Barberos</a>
@@ -30,92 +30,141 @@
                         <a class="nav-link" href="/admin/turnos">Turnos</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Volver al sitio</a>
+                        <a class="nav-link" href="/admin/reservas">Reservas</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        </ul>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container py-5">
+    <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Gestión de Turnos: <span th:text="${barbero.nombre}">Barbero</span></h1>
+            <h1><i class="bi bi-calendar-check me-2"></i>Gestión de Turnos: <span th:text="${barbero.nombre}">Barbero</span></h1>
             <a href="/admin/barberos" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Volver a la lista
+                <i class="bi bi-arrow-left"></i> Volver a Barberos
             </a>
         </div>
         
         <!-- Mensajes de alerta -->
         <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
             <span th:text="${mensaje}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         
         <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
             <span th:text="${error}"></span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         
         <!-- Información del barbero -->
-        <div class="card mb-4">
+        <div class="card mb-4 shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Información del Barbero</h5>
+                <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Información del Barbero</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <p><strong>Nombre:</strong> <span th:text="${barbero.nombre}">Juan Pérez</span></p>
-                        <p><strong>Especialidad:</strong> <span th:text="${barbero.especialidad}">Cortes clásicos</span></p>
-                        <p><strong>Día libre:</strong> <span th:text="${barbero.diaLibre}">Domingo</span></p>
+                        <p><strong><i class="bi bi-person me-2"></i>Nombre:</strong> <span th:text="${barbero.nombre}">Juan Pérez</span></p>
+                        <p><strong><i class="bi bi-scissors me-2"></i>Especialidad:</strong> <span th:text="${barbero.especialidad}">Cortes clásicos</span></p>
+                        <p><strong><i class="bi bi-calendar-x me-2"></i>Día libre:</strong> <span th:text="${barbero.diaLibre}">Domingo</span></p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Horario:</strong> <span th:text="${barbero.horaInicio} + ' - ' + ${barbero.horaFin}">9:00 - 18:00</span></p>
-                        <p><strong>Almuerzo:</strong> <span th:text="${barbero.horaInicioAlmuerzo} + ' - ' + ${barbero.horaFinAlmuerzo}">13:00 - 15:00</span></p>
-                        <p><strong>Duración de turnos:</strong> <span th:text="${barbero.duracionTurno} + ' minutos'">30 minutos</span></p>
+                        <p><strong><i class="bi bi-clock me-2"></i>Horario:</strong> <span th:text="${barbero.horaInicio} + ' - ' + ${barbero.horaFin}">9:00 - 18:00</span></p>
+                        <p><strong><i class="bi bi-cup-hot me-2"></i>Almuerzo:</strong> <span th:text="${barbero.horaInicioAlmuerzo} + ' - ' + ${barbero.horaFinAlmuerzo}">13:00 - 15:00</span></p>
+                        <p><strong><i class="bi bi-hourglass-split me-2"></i>Duración de turnos:</strong> <span th:text="${barbero.duracionTurno} + ' minutos'">30 minutos</span></p>
                     </div>
                 </div>
             </div>
         </div>
         
         <!-- Formulario para generar turnos -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Generar Turnos Disponibles</h5>
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Generar Turnos Disponibles</h5>
             </div>
             <div class="card-body">
                 <form th:action="@{'/admin/barberos/' + ${barbero.idBarbero} + '/generar-turnos'}" method="post">
-                    <div class="row">
+                    <div class="row g-3">
                         <div class="col-md-5">
-                            <label for="fechaInicio" class="form-label">Fecha de inicio</label>
-                            <input type="date" class="form-control" id="fechaInicio" name="fechaInicio" th:value="${fechaInicio}" required>
+                            <label for="fechaInicio" class="form-label fw-semibold">
+                                <i class="bi bi-calendar-event me-1"></i>Fecha de inicio
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="fechaInicio" 
+                                   name="fechaInicio" 
+                                   th:value="${fechaInicio}" 
+                                   required>
                         </div>
                         <div class="col-md-5">
-                            <label for="fechaFin" class="form-label">Fecha de fin</label>
-                            <input type="date" class="form-control" id="fechaFin" name="fechaFin" th:value="${fechaFin}" required>
+                            <label for="fechaFin" class="form-label fw-semibold">
+                                <i class="bi bi-calendar-event me-1"></i>Fecha de fin
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="fechaFin" 
+                                   name="fechaFin" 
+                                   th:value="${fechaFin}" 
+                                   required>
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">Generar Turnos</button>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-play-circle me-1"></i>Generar
+                            </button>
                         </div>
                     </div>
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-info-circle me-1"></i>Los turnos se generarán automáticamente según el horario del barbero
+                    </small>
                 </form>
+            </div>
+        </div>
+
+        <!-- Estadísticas rápidas -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card bg-light shadow-sm">
+                    <div class="card-body text-center">
+                        <h3 class="text-success mb-0" th:text="${turnosDisponibles != null ? turnosDisponibles.size() : 0}">0</h3>
+                        <small class="text-muted">Turnos Disponibles</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light shadow-sm">
+                    <div class="card-body text-center">
+                        <h3 class="text-warning mb-0" th:text="${turnosReservados != null ? turnosReservados.size() : 0}">0</h3>
+                        <small class="text-muted">Turnos Reservados</small>
+                    </div>
+                </div>
             </div>
         </div>
         
         <!-- Turnos disponibles -->
-        <div class="card mb-4">
+        <div class="card mb-4 shadow-sm">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Turnos Disponibles</h5>
+                <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Turnos Disponibles</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead>
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-light">
                             <tr>
                                 <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Hora</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th><i class="bi bi-calendar3 me-1"></i>Fecha</th>
+                                <th><i class="bi bi-clock me-1"></i>Hora</th>
+                                <th><i class="bi bi-info-circle me-1"></i>Estado</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -124,16 +173,28 @@
                                 <td th:text="${#temporals.format(turno.fechaHora, 'dd/MM/yyyy')}">01/01/2025</td>
                                 <td th:text="${#temporals.format(turno.fechaHora, 'HH:mm')}">10:00</td>
                                 <td><span class="badge bg-success">Disponible</span></td>
-                                <td>
-                                    <a th:href="@{'/admin/turnos/eliminar/' + ${turno.idTurno}}" 
-                                       class="btn btn-danger btn-sm"
-                                       onclick="return confirm('¿Estás seguro de eliminar este turno?')">
-                                        <i class="bi bi-trash"></i> Eliminar
-                                    </a>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <a th:href="@{'/admin/turnos/marcar-no-disponible/' + ${turno.idTurno}}" 
+                                           class="btn btn-warning btn-sm"
+                                           title="Marcar como no disponible">
+                                            <i class="bi bi-x-circle"></i> Bloquear
+                                        </a>
+                                        <a th:href="@{'/admin/turnos/eliminar/' + ${turno.idTurno}}" 
+                                           class="btn btn-danger btn-sm"
+                                           onclick="return confirm('¿Estás seguro de eliminar este turno?')"
+                                           title="Eliminar turno">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
-                            <tr th:if="${turnosDisponibles.empty}">
-                                <td colspan="5" class="text-center">No hay turnos disponibles</td>
+                            <tr th:if="${turnosDisponibles == null || turnosDisponibles.empty}">
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    <i class="bi bi-calendar-x" style="font-size: 2rem;"></i>
+                                    <p class="mb-0 mt-2">No hay turnos disponibles</p>
+                                    <small>Genera turnos usando el formulario de arriba</small>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -142,21 +203,20 @@
         </div>
         
         <!-- Turnos reservados -->
-        <div class="card">
+        <div class="card shadow-sm">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Turnos Reservados</h5>
+                <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Turnos Reservados / No Disponibles</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead>
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-light">
                             <tr>
                                 <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Hora</th>
-                                <th>Cliente</th>
-                                <th>Servicio</th>
-                                <th>Acciones</th>
+                                <th><i class="bi bi-calendar3 me-1"></i>Fecha</th>
+                                <th><i class="bi bi-clock me-1"></i>Hora</th>
+                                <th><i class="bi bi-info-circle me-1"></i>Estado</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -164,21 +224,28 @@
                                 <td th:text="${turno.idTurno}">1</td>
                                 <td th:text="${#temporals.format(turno.fechaHora, 'dd/MM/yyyy')}">01/01/2025</td>
                                 <td th:text="${#temporals.format(turno.fechaHora, 'HH:mm')}">10:00</td>
-                                <td th:text="${turno.cliente != null ? turno.cliente.nombre : 'N/A'}">Cliente</td>
-                                <td th:text="${turno.corte != null ? turno.corte.nombre : 'N/A'}">Servicio</td>
-                                <td>
+                                <td><span class="badge bg-warning">No Disponible</span></td>
+                                <td class="text-center">
                                     <div class="btn-group" role="group">
-                                        <a th:href="@{'/admin/turnos/completar/' + ${turno.idTurno}}" class="btn btn-success btn-sm">
-                                            <i class="bi bi-check-circle"></i> Completar
+                                        <a th:href="@{'/admin/turnos/marcar-disponible/' + ${turno.idTurno}}" 
+                                           class="btn btn-success btn-sm"
+                                           title="Marcar como disponible">
+                                            <i class="bi bi-check-circle"></i> Liberar
                                         </a>
-                                        <a th:href="@{'/admin/turnos/cancelar/' + ${turno.idTurno}}" class="btn btn-warning btn-sm">
-                                            <i class="bi bi-x-circle"></i> Cancelar
+                                        <a th:href="@{'/admin/turnos/eliminar/' + ${turno.idTurno}}" 
+                                           class="btn btn-danger btn-sm"
+                                           onclick="return confirm('¿Estás seguro de eliminar este turno?')"
+                                           title="Eliminar turno">
+                                            <i class="bi bi-trash"></i>
                                         </a>
                                     </div>
                                 </td>
                             </tr>
                             <tr th:if="${turnosReservados == null || turnosReservados.empty}">
-                                <td colspan="6" class="text-center">No hay turnos reservados</td>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    <i class="bi bi-calendar-check" style="font-size: 2rem;"></i>
+                                    <p class="mb-0 mt-2">No hay turnos reservados</p>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -188,23 +255,26 @@
     </div>
 
     <!-- Footer -->
-    <footer class="bg-dark text-white py-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Barbería Estilo - Panel de Administración</h5>
-                    <p>Sistema de gestión para administradores.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <a href="/admin" class="btn btn-outline-light">Volver al sitio principal</a>
-                </div>
-            </div>
-            <div class="text-center mt-4">
-                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
-            </div>
+    <footer class="bg-dark text-white py-3 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Establecer fecha mínima como hoy
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fechaInicio').setAttribute('min', today);
+            document.getElementById('fechaFin').setAttribute('min', today);
+            
+            // Si fechaInicio cambia, actualizar el mínimo de fechaFin
+            document.getElementById('fechaInicio').addEventListener('change', function() {
+                document.getElementById('fechaFin').setAttribute('min', this.value);
+            });
+        });
+    </script>
 </body>
 </html>

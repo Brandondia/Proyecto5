@@ -44,7 +44,6 @@
             overflow: hidden;
         }
 
-        /* Vista semanal */
         #weekTable {
             font-size: 0.8rem;
         }
@@ -165,13 +164,6 @@
             background-color: #0b5ed7 !important;
         }
 
-        .empty-day-cell {
-            text-align: center;
-            color: #adb5bd;
-            font-size: 0.7rem;
-            padding: 0.5rem;
-        }
-
         .week-scroll-container {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -200,32 +192,20 @@
 </head>
 
 <body>
-    <!-- ========== NAVBAR ========== -->
+    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="/admin/home">Panel de Administración</a>
-
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/panel">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/barberos">Barberos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/cortes">Servicios</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/admin/turnos">Turnos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/reservas">Reservas</a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/panel">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/barberos">Barberos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/cortes">Servicios</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/admin/turnos">Turnos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/reservas">Reservas</a></li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> Admin
@@ -239,15 +219,14 @@
         </div>
     </nav>
 
-    <!-- ========== CONTENIDO PRINCIPAL ========== -->
+    <!-- CONTENIDO PRINCIPAL -->
     <div class="container py-4">
         
-        <!-- Título -->
         <div class="mb-3">
             <h1><i class="bi bi-calendar-week me-2"></i>Gestión de Turnos</h1>
         </div>
 
-        <!-- ========== ESTADÍSTICAS RÁPIDAS ========== -->
+        <!-- ESTADÍSTICAS -->
         <div class="row mb-3" th:if="${turnos != null}">
             <div class="col-md-4 mb-2">
                 <div class="card stats-card h-100">
@@ -294,7 +273,7 @@
             </div>
         </div>
 
-        <!-- ========== MENSAJES DE ALERTA ========== -->
+        <!-- MENSAJES -->
         <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i>
             <span th:text="${mensaje}"></span>
@@ -307,71 +286,85 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <!-- ========== FILTROS Y CONTROLES ========== -->
+        <!-- FILTROS -->
         <div class="card filter-card mb-3">
             <div class="card-body py-3">
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold mb-1">
-                            <i class="bi bi-person me-1"></i>Filtrar por Barbero
-                        </label>
-                        <select class="form-select form-select-sm" id="barberoFilter">
-                            <option value="">Todos los barberos</option>
-                            <option th:each="barbero : ${barberos}" 
-                                    th:value="${barbero.idBarbero}"
-                                    th:text="${barbero.nombre}">
-                            </option>
-                        </select>
-                    </div>
+                <form id="filterForm" method="GET" action="/admin/turnos/filtrar">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold mb-1">
+                                <i class="bi bi-person me-1"></i>Filtrar por Barbero
+                            </label>
+                            <select class="form-select form-select-sm" name="barberoId" id="barberoFilter">
+                                <option value="">Todos los barberos</option>
+                                <option th:each="barbero : ${barberos}" 
+                                        th:value="${barbero.idBarbero}"
+                                        th:text="${barbero.nombre}"
+                                        th:selected="${filtroBarberoId != null && filtroBarberoId == barbero.idBarbero}">
+                                </option>
+                            </select>
+                        </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold mb-1">
-                            <i class="bi bi-filter me-1"></i>Filtrar por Estado
-                        </label>
-                        <select class="form-select form-select-sm" id="estadoFilter">
-                            <option value="">Todos los estados</option>
-                            <option value="DISPONIBLE">✅ Disponibles</option>
-                            <option value="NO_DISPONIBLE">⚠️ No Disponibles</option>
-                        </select>
-                    </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold mb-1">
+                                <i class="bi bi-filter me-1"></i>Filtrar por Estado
+                            </label>
+                            <select class="form-select form-select-sm" name="estado" id="estadoFilter">
+                                <option value="">Todos los estados</option>
+                                <option value="DISPONIBLE" th:selected="${filtroEstado == 'DISPONIBLE'}">✅ Disponibles</option>
+                                <option value="NO_DISPONIBLE" th:selected="${filtroEstado == 'NO_DISPONIBLE'}">⚠️ No Disponibles</option>
+                            </select>
+                        </div>
 
-                    <div class="col-md-6 text-end">
-                        <label class="form-label fw-semibold mb-1">Navegación Semanal</label>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="prevWeek">
-                                <i class="bi bi-chevron-left"></i> Anterior
-                            </button>
-                            <button type="button" class="btn btn-primary btn-sm" id="currentWeek">
-                                <i class="bi bi-calendar-today me-1"></i>Esta Semana
-                            </button>
-                            <button type="button" class="btn btn-outline-primary btn-sm" id="nextWeek">
-                                Siguiente <i class="bi bi-chevron-right"></i>
+                        <input type="hidden" name="fecha" id="fechaInput" th:value="${fechaInicio}" />
+
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="bi bi-search me-1"></i>Aplicar Filtros
                             </button>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Leyenda -->
-                <div class="mt-3 pt-3 border-top">
-                    <small class="text-muted fw-semibold me-3">Leyenda:</small>
-                    <span class="legend-item disponible">
-                        <i class="bi bi-check-circle"></i> Disponible
-                    </span>
-                    <span class="legend-item no-disponible">
-                        <i class="bi bi-x-circle"></i> No Disponible
-                    </span>
-                    <small class="text-muted ms-3">
-                        <i class="bi bi-info-circle me-1"></i>Pasa el cursor sobre un turno para ver las acciones
-                    </small>
-                </div>
+                        <div class="col-md-3 text-end">
+                            <label class="form-label fw-semibold mb-1">Navegación Semanal</label>
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="prevWeek">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm" id="currentWeek">
+                                    <i class="bi bi-calendar-today"></i> Esta Semana
+                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="nextWeek">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leyenda -->
+                    <div class="mt-3 pt-3 border-top">
+                        <small class="text-muted fw-semibold me-3">Leyenda:</small>
+                        <span class="legend-item disponible">
+                            <i class="bi bi-check-circle"></i> Disponible
+                        </span>
+                        <span class="legend-item no-disponible">
+                            <i class="bi bi-x-circle"></i> No Disponible
+                        </span>
+                        <small class="text-muted ms-3">
+                            <i class="bi bi-info-circle me-1"></i>Pasa el cursor sobre un turno para ver las acciones
+                        </small>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <!-- ========== CALENDARIO SEMANAL ========== -->
+        <!-- CALENDARIO SEMANAL -->
         <div class="card table-card">
             <div class="card-header bg-primary text-white py-2">
                 <h5 class="mb-0">
                     <i class="bi bi-calendar-week me-2"></i>Calendario Semanal de Turnos
+                    <span th:if="${fechaInicio != null && fechaFin != null}" class="float-end">
+                        <small th:text="${#temporals.format(fechaInicio, 'dd/MM')} + ' - ' + ${#temporals.format(fechaFin, 'dd/MM/yyyy')}"></small>
+                    </span>
                 </h5>
             </div>
             <div class="card-body p-0">
@@ -380,7 +373,6 @@
                         <thead>
                             <tr id="weekDays">
                                 <th class="time-cell" style="width: 70px;">Hora</th>
-                                <!-- Los días se generarán con JavaScript -->
                             </tr>
                         </thead>
                         <tbody id="weekBody">
@@ -399,77 +391,65 @@
         </div>
     </div>
 
-    <!-- ========== FOOTER ========== -->
+    <!-- FOOTER -->
     <footer class="bg-dark text-white py-3 mt-4">
         <div class="container text-center">
             <p class="mb-0">&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
         </div>
     </footer>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <script>
-        let turnosData = [];
-        let currentWeekStart = new Date();
-        let selectedBarberoId = '';
-        let selectedEstado = '';
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const turnosData = /*[[${turnos}]]*/ [];
+        const fechaInicioStr = /*[[${fechaInicio}]]*/ null;
+        const fechaFinStr = /*[[${fechaFin}]]*/ null;
+        
+        let currentWeekStart = fechaInicioStr ? new Date(fechaInicioStr + 'T00:00:00') : getMonday(new Date());
+        
+        function getMonday(d) {
+            d = new Date(d);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            d.setDate(diff);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        }
+        
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Cargar turnos desde la tabla HTML renderizada por Thymeleaf
-            cargarTurnosDesdeHTML();
+            console.log('Turnos recibidos:', turnosData.length);
+            console.log('Semana:', fechaInicioStr, 'a', fechaFinStr);
             
-            console.log('Turnos cargados:', turnosData.length);
+            renderWeekView();
             
-            if (turnosData.length > 0) {
-                renderWeekView();
-            }
-            
-            // Event listeners
-            document.getElementById('barberoFilter')?.addEventListener('change', (e) => {
-                selectedBarberoId = e.target.value;
-                renderWeekView();
-            });
-            
-            document.getElementById('estadoFilter')?.addEventListener('change', (e) => {
-                selectedEstado = e.target.value;
-                renderWeekView();
-            });
-            
-            document.getElementById('prevWeek')?.addEventListener('click', () => {
+            // Navegación
+            document.getElementById('prevWeek').addEventListener('click', () => {
                 currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-                renderWeekView();
+                navigateToWeek();
             });
             
-            document.getElementById('nextWeek')?.addEventListener('click', () => {
+            document.getElementById('nextWeek').addEventListener('click', () => {
                 currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-                renderWeekView();
+                navigateToWeek();
             });
             
-            document.getElementById('currentWeek')?.addEventListener('click', () => {
-                currentWeekStart = new Date();
-                renderWeekView();
+            document.getElementById('currentWeek').addEventListener('click', () => {
+                window.location.href = '/admin/turnos';
             });
         });
         
-        function cargarTurnosDesdeHTML() {
-            // Leer desde los inputs hidden
-            document.querySelectorAll('input[data-turno-id]').forEach(input => {
-                try {
-                    const turno = {
-                        idTurno: parseInt(input.dataset.turnoId),
-                        fechaHora: input.dataset.turnoFecha,
-                        barbero: {
-                            idBarbero: parseInt(input.dataset.turnoBarberoId) || null,
-                            nombre: input.dataset.turnoBarberoNombre || 'Sin asignar'
-                        },
-                        estado: input.dataset.turnoEstado
-                    };
-                    turnosData.push(turno);
-                } catch (e) {
-                    console.error('Error al parsear turno:', e);
-                }
-            });
+        function navigateToWeek() {
+            const fechaInput = document.getElementById('fechaInput');
+            fechaInput.value = formatDate(currentWeekStart);
+            document.getElementById('filterForm').submit();
         }
         
         function formatTime(dateStr) {
@@ -488,21 +468,13 @@
         function renderWeekView() {
             const weekDays = document.getElementById('weekDays');
             const weekBody = document.getElementById('weekBody');
-            if (!weekDays || !weekBody) return;
             
             weekDays.innerHTML = '<th class="time-cell">Hora</th>';
             weekBody.innerHTML = '';
             
-            // Obtener inicio de semana (lunes)
-            const start = new Date(currentWeekStart);
-            const day = start.getDay();
-            const diff = start.getDate() - day + (day === 0 ? -6 : 1);
-            start.setDate(diff);
-            start.setHours(0, 0, 0, 0);
-            
             const weekDates = [];
             for (let i = 0; i < 7; i++) {
-                const date = new Date(start);
+                const date = new Date(currentWeekStart);
                 date.setDate(date.getDate() + i);
                 weekDates.push(date);
                 
@@ -518,20 +490,9 @@
                 weekDays.appendChild(th);
             }
             
-            // Filtrar turnos
-            let filteredTurnos = turnosData;
-            if (selectedBarberoId) {
-                filteredTurnos = filteredTurnos.filter(t => 
-                    t.barbero?.idBarbero == selectedBarberoId
-                );
-            }
-            if (selectedEstado) {
-                filteredTurnos = filteredTurnos.filter(t => t.estado === selectedEstado);
-            }
-            
             // Agrupar turnos por hora
             const turnosByHour = {};
-            filteredTurnos.forEach(turno => {
+            turnosData.forEach(turno => {
                 const date = new Date(turno.fechaHora);
                 const hour = date.getHours();
                 
@@ -556,7 +517,6 @@
                         <td colspan="8" class="text-center p-5">
                             <i class="bi bi-calendar-x" style="font-size: 3rem; color: #dee2e6;"></i>
                             <p class="text-muted mt-3">No hay turnos para mostrar en esta semana</p>
-                            <small class="text-muted">Intenta cambiar los filtros o navegar a otra semana</small>
                         </td>
                     </tr>
                 `;
@@ -611,18 +571,8 @@
                 weekBody.appendChild(tr);
             });
         }
+        /*]]>*/
     </script>
-    
-    <!-- Hidden data for JavaScript -->
-    <div style="display: none;">
-        <input th:each="turno : ${turnos}" 
-               type="hidden" 
-               th:attr="data-turno-id=${turno.idTurno},
-                       data-turno-fecha=${turno.fechaHora},
-                       data-turno-barbero-id=${turno.barbero != null ? turno.barbero.idBarbero : 0},
-                       data-turno-barbero-nombre=${turno.barbero != null ? turno.barbero.nombre : 'Sin asignar'},
-                       data-turno-estado=${turno.estado.name()}" />
-    </div>
 </body>
 
 </html>

@@ -15,6 +15,7 @@ public class CorteDeCabello {
     private Long id; // Identificador único del corte
 
     private String nombre; // Nombre del corte, por ejemplo: "Corte Clásico"
-    private double precio; // Precio del corte en moneda local
-    private int duracion; // Duración del corte en minutos 
+    private Double precio; // Precio del corte en moneda local (cambiado de double a Double)
+    private Integer duracion; // Duración del corte en minutos (cambiado de int a Integer)
+    private Boolean activo; // Indica si el corte está activo o no
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,28 +13,34 @@
             margin: 0 auto;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
+
         .form-header {
             text-align: center;
             margin-bottom: 30px;
         }
+
         .service-card {
             cursor: pointer;
             transition: all 0.3s;
         }
+
         .service-card.selected {
             border: 2px solid #0d6efd;
             transform: translateY(-5px);
         }
+
         .barber-card {
             cursor: pointer;
             transition: all 0.3s;
         }
+
         .barber-card.selected {
             border: 2px solid #0d6efd;
             transform: translateY(-5px);
         }
+
         .time-slot {
             cursor: pointer;
             transition: all 0.2s;
@@ -45,20 +52,24 @@
             display: inline-block;
             width: 80px;
         }
+
         .time-slot:hover {
             background-color: #f8f9fa;
         }
+
         .time-slot.selected {
             background-color: #0d6efd;
             color: white;
             border-color: #0d6efd;
         }
+
         .date-selector {
             margin-bottom: 20px;
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
         }
+
         .date-item {
             cursor: pointer;
             padding: 10px;
@@ -69,17 +80,21 @@
             transition: all 0.2s;
             width: 100px;
         }
+
         .date-item:hover {
             background-color: #f8f9fa;
         }
+
         .date-item.selected {
             background-color: #0d6efd;
             color: white;
             border-color: #0d6efd;
         }
+
         .calendar-container {
             margin-bottom: 20px;
         }
+
         .loading-spinner {
             display: flex;
             justify-content: center;
@@ -88,6 +103,7 @@
         }
     </style>
 </head>
+
 <body class="bg-light">
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -130,18 +146,19 @@
                 <h2>Reserva tu Corte de Cabello</h2>
                 <p class="text-muted">Selecciona el servicio, barbero y horario de tu preferencia</p>
             </div>
-            
+
             <form id="reservaForm" th:action="@{/reserva/confirmar}" method="post">
                 <!-- Campo oculto para el ID del cliente -->
                 <input type="hidden" id="clienteId" name="clienteId" th:value="${clienteId}">
-                
+
                 <!-- Paso 1: Seleccionar Corte de Cabello -->
                 <div class="booking-step" id="paso1">
                     <h4 class="mb-4">Paso 1: Selecciona tu Corte de Cabello</h4>
-                    
+
                     <div class="row">
                         <div th:each="corte : ${cortes}" class="col-md-4 mb-4">
-                            <div class="card service-card h-100" th:data-id="${corte.id}" onclick="seleccionarCorte(this)">
+                            <div class="card service-card h-100" th:data-id="${corte.id}"
+                                onclick="seleccionarCorte(this)">
                                 <div class="card-body text-center">
                                     <h5 class="card-title" th:text="${corte.nombre}">Nombre del Corte</h5>
                                     <p class="card-text text-primary fw-bold" th:text="'$' + ${corte.precio}">$20.00</p>
@@ -149,21 +166,23 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <input type="hidden" id="corteId" name="corteId">
-                    
+
                     <div class="d-grid gap-2 mt-4">
-                        <button type="button" class="btn btn-primary" onclick="siguientePaso('paso1', 'paso2')">Siguiente</button>
+                        <button type="button" class="btn btn-primary"
+                            onclick="siguientePaso('paso1', 'paso2')">Siguiente</button>
                     </div>
                 </div>
-                
+
                 <!-- Paso 2: Seleccionar Barbero -->
                 <div class="booking-step" id="paso2" style="display: none;">
                     <h4 class="mb-4">Paso 2: Selecciona tu Barbero</h4>
-                    
+
                     <div class="row">
                         <div th:each="barbero : ${barberos}" class="col-md-4 mb-4">
-                            <div class="card barber-card h-100" th:data-id="${barbero.idBarbero}" onclick="seleccionarBarbero(this)">
+                            <div class="card barber-card h-100" th:data-id="${barbero.idBarbero}"
+                                onclick="seleccionarBarbero(this)">
                                 <div class="card-body text-center">
                                     <h5 class="card-title" th:text="${barbero.nombre}">Nombre del Barbero</h5>
                                     <p class="card-text" th:text="${barbero.especialidad}">Especialidad</p>
@@ -171,19 +190,21 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <input type="hidden" id="barberoId" name="barberoId">
-                    
+
                     <div class="d-flex justify-content-between mt-4">
-                        <button type="button" class="btn btn-secondary" onclick="siguientePaso('paso2', 'paso1')">Anterior</button>
-                        <button type="button" class="btn btn-primary" onclick="siguientePaso('paso2', 'paso3'); cargarTurnos();">Siguiente</button>
+                        <button type="button" class="btn btn-secondary"
+                            onclick="siguientePaso('paso2', 'paso1')">Anterior</button>
+                        <button type="button" class="btn btn-primary"
+                            onclick="siguientePaso('paso2', 'paso3'); cargarTurnos();">Siguiente</button>
                     </div>
                 </div>
-                
+
                 <!-- Paso 3: Seleccionar Fecha y Hora -->
                 <div class="booking-step" id="paso3" style="display: none;">
                     <h4 class="mb-4">Paso 3: Selecciona Fecha y Hora</h4>
-                    
+
                     <div class="mb-4">
                         <h5>Selecciona una fecha:</h5>
                         <div id="fechasContainer" class="date-selector">
@@ -192,27 +213,29 @@
                             </div>
                             <span class="ms-2">Cargando fechas disponibles...</span>
                         </div>
-                        
+
                         <h5 class="mt-4">Selecciona una hora:</h5>
                         <div id="horasContainer" class="d-flex flex-wrap">
                             <p class="text-center w-100">Selecciona una fecha primero</p>
                         </div>
                     </div>
-                    
+
                     <input type="hidden" id="turnoId" name="turnoId">
                     <input type="hidden" id="fechaSeleccionada" name="fechaSeleccionada">
                     <input type="hidden" id="horaSeleccionada" name="horaSeleccionada">
-                    
+
                     <div class="d-flex justify-content-between mt-4">
-                        <button type="button" class="btn btn-secondary" onclick="siguientePaso('paso3', 'paso2')">Anterior</button>
-                        <button type="button" class="btn btn-primary" onclick="confirmarReserva()">Confirmar Reserva</button>
+                        <button type="button" class="btn btn-secondary"
+                            onclick="siguientePaso('paso3', 'paso2')">Anterior</button>
+                        <button type="button" class="btn btn-primary" onclick="confirmarReserva()">Confirmar
+                            Reserva</button>
                     </div>
                 </div>
-                
+
                 <!-- Paso 4: Resumen y Confirmación -->
                 <div class="booking-step" id="paso4" style="display: none;">
                     <h4 class="mb-4">Resumen de tu Reserva</h4>
-                    
+
                     <div class="card mb-4">
                         <div class="card-body">
                             <div class="row">
@@ -227,13 +250,16 @@
                             </div>
                             <div class="mt-3">
                                 <label for="comentarios" class="form-label">Comentarios adicionales (opcional):</label>
-                                <textarea class="form-control" id="comentarios" name="comentarios" rows="3" maxlength="250" placeholder="Escribe aquí cualquier información adicional o petición especial"></textarea>
+                                <textarea class="form-control" id="comentarios" name="comentarios" rows="3"
+                                    maxlength="250"
+                                    placeholder="Escribe aquí cualquier información adicional o petición especial"></textarea>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="d-flex justify-content-between mt-4">
-                        <button type="button" class="btn btn-secondary" onclick="siguientePaso('paso4', 'paso3')">Anterior</button>
+                        <button type="button" class="btn btn-secondary"
+                            onclick="siguientePaso('paso4', 'paso3')">Anterior</button>
                         <button type="submit" class="btn btn-success">Confirmar Reserva</button>
                     </div>
                 </div>
@@ -252,14 +278,14 @@
                 <div class="col-md-4">
                     <h5>Contacto</h5>
                     <p>Dirección: Av. Principal 123<br>
-                    Teléfono: (123) 456-7890<br>
-                    Email: info@barberiaestilo.com</p>
+                        Teléfono: (123) 456-7890<br>
+                        Email: info@barberiaestilo.com</p>
                 </div>
                 <div class="col-md-4">
                     <h5>Horarios</h5>
                     <p>Lunes a Viernes: 9:00 AM - 8:00 PM<br>
-                    Sábados: 10:00 AM - 6:00 PM<br>
-                    Domingos: Cerrado</p>
+                        Sábados: 10:00 AM - 6:00 PM<br>
+                        Domingos: Cerrado</p>
                 </div>
             </div>
             <div class="text-center mt-4">
@@ -277,7 +303,7 @@
         let fechaSeleccionada = null;
         let horaSeleccionada = null;
         let turnosPorFecha = {};
-        
+
         // Función para navegar entre pasos
         function siguientePaso(pasoActual, pasoSiguiente) {
             // Validar que se haya seleccionado algo en el paso actual
@@ -285,85 +311,86 @@
                 alert('Por favor, selecciona un corte de cabello');
                 return;
             }
-            
+
             if (pasoActual === 'paso2' && !barberoSeleccionado) {
                 alert('Por favor, selecciona un barbero');
                 return;
             }
-            
+
             if (pasoActual === 'paso3' && !turnoSeleccionado && pasoSiguiente === 'paso4') {
                 alert('Por favor, selecciona un turno');
                 return;
             }
-            
+
             // Ocultar paso actual y mostrar siguiente
             document.getElementById(pasoActual).style.display = 'none';
             document.getElementById(pasoSiguiente).style.display = 'block';
-            
+
             // Si vamos al paso de resumen, actualizar la información
             if (pasoSiguiente === 'paso4') {
                 actualizarResumen();
             }
         }
-        
+
         // Función para seleccionar un corte
         function seleccionarCorte(elemento) {
             // Quitar selección anterior
             const servicios = document.querySelectorAll('.service-card');
             servicios.forEach(s => s.classList.remove('selected'));
-            
+
             // Marcar como seleccionado
             elemento.classList.add('selected');
-            
+
             // Guardar ID del corte
             corteSeleccionado = {
                 id: elemento.getAttribute('data-id'),
                 nombre: elemento.querySelector('.card-title').textContent,
                 precio: elemento.querySelector('.card-text').textContent
             };
-            
+
             document.getElementById('corteId').value = corteSeleccionado.id;
         }
-        
+
         // Función para seleccionar un barbero
         function seleccionarBarbero(elemento) {
             // Quitar selección anterior
             const barberos = document.querySelectorAll('.barber-card');
             barberos.forEach(b => b.classList.remove('selected'));
-            
+
             // Marcar como seleccionado
             elemento.classList.add('selected');
-            
+
             // Guardar ID del barbero
             barberoSeleccionado = {
                 id: elemento.getAttribute('data-id'),
                 nombre: elemento.querySelector('.card-title').textContent
             };
-            
+
             document.getElementById('barberoId').value = barberoSeleccionado.id;
         }
-        
+
         // Función para cargar los turnos disponibles
         function cargarTurnos() {
-            if (!barberoSeleccionado) return;
-            
+            if (!barberoSeleccionado || !corteSeleccionado) return;
+
             const fechasContainer = document.getElementById('fechasContainer');
             fechasContainer.innerHTML = `
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Cargando...</span>
-                </div>
-                <span class="ms-2">Cargando fechas disponibles...</span>
-            `;
-            
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <span class="ms-2">Cargando fechas disponibles...</span>
+    `;
+
             // Limpiar el contenedor de horas
             document.getElementById('horasContainer').innerHTML = '<p class="text-center w-100">Selecciona una fecha primero</p>';
-            
+
             // Resetear selecciones
             fechaSeleccionada = null;
             horaSeleccionada = null;
             turnoSeleccionado = null;
-            
-            fetch(`/api/turnos/disponibles/${barberoSeleccionado.id}`)
+
+            // 🔥 CAMBIO: Ahora usamos el endpoint que filtra por servicio
+            fetch(`/api/turnos/disponibles/${barberoSeleccionado.id}/servicio/${corteSeleccionado.id}`)
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(errorData => {
@@ -374,54 +401,56 @@
                     }
                     return response.json();
                 })
-                .then(turnos => {
-                    console.log('Turnos recibidos:', turnos);
-                    
+                .then(data => {
+                    console.log('Respuesta del servidor:', data);
+
+                    const turnos = data.turnos;
+
                     if (!Array.isArray(turnos) || turnos.length === 0) {
-                        fechasContainer.innerHTML = '<p class="text-danger">No hay turnos disponibles para este barbero.</p>';
+                        fechasContainer.innerHTML = `
+                    <p class="text-danger">
+                        No hay turnos disponibles para el servicio "${data.nombreServicio}" 
+                        (${data.duracionServicio} minutos) con este barbero.
+                    </p>
+                `;
                         return;
                     }
-                    
+
                     // Agrupar turnos por fecha
                     turnosPorFecha = {};
                     turnos.forEach(turno => {
                         if (turno.fechaHora) {
-                            // Usar la fecha exacta del servidor sin ajustes de zona horaria
                             const fechaHora = new Date(turno.fechaHora);
-                            // Formatear la fecha en formato ISO (YYYY-MM-DD) para usar como clave
                             const fecha = fechaHora.toISOString().split('T')[0];
-                            
+
                             if (!turnosPorFecha[fecha]) {
                                 turnosPorFecha[fecha] = [];
                             }
                             turnosPorFecha[fecha].push(turno);
                         }
                     });
-                    
+
                     // Crear HTML para mostrar las fechas
                     let html = '';
-                    
+
                     for (const fecha in turnosPorFecha) {
-                        // Crear objeto Date con la fecha correcta
-                        // Usamos new Date(fecha + 'T00:00:00') para asegurar que se interprete en la zona horaria local
                         const fechaObj = new Date(fecha + 'T00:00:00');
-                        
-                        // Formatear la fecha para mostrar
+
                         const fechaFormateada = fechaObj.toLocaleDateString('es-ES', {
                             weekday: 'short',
                             day: 'numeric',
                             month: 'short'
                         });
-                        
+
                         html += `
-                            <div class="date-item" data-fecha="${fecha}" onclick="seleccionarFecha(this)">
-                                ${fechaFormateada}
-                            </div>
-                        `;
+                    <div class="date-item" data-fecha="${fecha}" onclick="seleccionarFecha(this)">
+                        ${fechaFormateada}
+                    </div>
+                `;
                     }
-                    
+
                     if (html === '') {
-                        fechasContainer.innerHTML = '<p class="text-danger">No hay fechas disponibles para este barbero.</p>';
+                        fechasContainer.innerHTML = '<p class="text-danger">No hay fechas disponibles.</p>';
                     } else {
                         fechasContainer.innerHTML = html;
                     }
@@ -429,51 +458,51 @@
                 .catch(error => {
                     console.error('Error al cargar turnos:', error);
                     fechasContainer.innerHTML = `
-                        <div class="alert alert-danger">
-                            Error al cargar las fechas disponibles: ${error.message}
-                        </div>
-                        <button type="button" class="btn btn-primary mt-2" onclick="cargarTurnos()">
-                            Intentar nuevamente
-                        </button>
-                    `;
+                <div class="alert alert-danger">
+                    Error al cargar las fechas disponibles: ${error.message}
+                </div>
+                <button type="button" class="btn btn-primary mt-2" onclick="cargarTurnos()">
+                    Intentar nuevamente
+                </button>
+            `;
                 });
         }
-        
+
         // Función para seleccionar una fecha
         function seleccionarFecha(elemento) {
             // Quitar selección anterior
             const fechas = document.querySelectorAll('.date-item');
             fechas.forEach(f => f.classList.remove('selected'));
-            
+
             // Marcar como seleccionado
             elemento.classList.add('selected');
-            
+
             // Guardar fecha seleccionada
             fechaSeleccionada = elemento.getAttribute('data-fecha');
             document.getElementById('fechaSeleccionada').value = fechaSeleccionada;
-            
+
             // Resetear hora seleccionada
             horaSeleccionada = null;
             turnoSeleccionado = null;
-            
+
             // Cargar horas disponibles para esta fecha
             const horasContainer = document.getElementById('horasContainer');
-            
+
             if (!turnosPorFecha[fechaSeleccionada] || turnosPorFecha[fechaSeleccionada].length === 0) {
                 horasContainer.innerHTML = '<p class="text-danger">No hay horarios disponibles para esta fecha.</p>';
                 return;
             }
-            
+
             // Ordenar turnos por hora
             const turnosOrdenados = turnosPorFecha[fechaSeleccionada].sort((a, b) => {
                 const horaA = a.fechaHora.split('T')[1];
                 const horaB = b.fechaHora.split('T')[1];
                 return horaA.localeCompare(horaB);
             });
-            
+
             // Crear HTML para mostrar las horas
             let html = '';
-            
+
             turnosOrdenados.forEach(turno => {
                 const hora = turno.fechaHora.split('T')[1].substring(0, 5);
                 html += `
@@ -486,37 +515,37 @@
             </div>
         `;
             });
-            
+
             horasContainer.innerHTML = html;
         }
-        
+
         // Función para seleccionar una hora
         function seleccionarHora(elemento) {
             // Quitar selección anterior
             const horas = document.querySelectorAll('.time-slot');
             horas.forEach(h => h.classList.remove('selected'));
-            
+
             // Marcar como seleccionado
             elemento.classList.add('selected');
-            
+
             // Guardar información del turno
             turnoSeleccionado = {
                 id: elemento.getAttribute('data-id'),
                 hora: elemento.getAttribute('data-hora')
             };
-            
+
             horaSeleccionada = turnoSeleccionado.hora;
-            
+
             document.getElementById('turnoId').value = turnoSeleccionado.id;
             document.getElementById('horaSeleccionada').value = horaSeleccionada;
         }
-        
+
         // Función para actualizar el resumen
         function actualizarResumen() {
             document.getElementById('resumenCorte').textContent = corteSeleccionado.nombre;
             document.getElementById('resumenPrecio').textContent = corteSeleccionado.precio;
             document.getElementById('resumenBarbero').textContent = barberoSeleccionado.nombre;
-            
+
             // Formatear la fecha para mostrarla
             // Usamos new Date(fechaSeleccionada + 'T00:00:00') para asegurar que se interprete en la zona horaria local
             const fechaObj = new Date(fechaSeleccionada + 'T00:00:00');
@@ -526,22 +555,22 @@
                 month: 'long',
                 day: 'numeric'
             });
-            
+
             document.getElementById('resumenFechaHora').textContent = `${fechaFormateada} a las ${horaSeleccionada}`;
         }
-        
+
         // Función para confirmar la reserva
         function confirmarReserva() {
             if (!corteSeleccionado || !barberoSeleccionado || !turnoSeleccionado) {
                 alert('Por favor, completa todos los pasos de la reserva');
                 return;
             }
-            
+
             siguientePaso('paso3', 'paso4');
         }
-        
+
         // Si hay un ID de cliente en la URL, lo establecemos en el campo oculto
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
             const clienteId = urlParams.get('clienteId');
             if (clienteId) {
@@ -551,22 +580,23 @@
     </script>
 
     <script>
-    // Evita envíos múltiples del formulario
-    document.addEventListener("DOMContentLoaded", function() {
-        const form = document.getElementById("reservaForm");
-        const submitBtn = form.querySelector('button[type="submit"]');
-        let enviado = false;
+        // Evita envíos múltiples del formulario
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("reservaForm");
+            const submitBtn = form.querySelector('button[type="submit"]');
+            let enviado = false;
 
-        form.addEventListener("submit", function(e) {
-            if (enviado) {
-                e.preventDefault(); // Evita segundo envío
-                return;
-            }
-            enviado = true;
-            submitBtn.disabled = true; // Desactiva el botón
-            submitBtn.textContent = "Procesando..."; // Feedback visual
+            form.addEventListener("submit", function (e) {
+                if (enviado) {
+                    e.preventDefault(); // Evita segundo envío
+                    return;
+                }
+                enviado = true;
+                submitBtn.disabled = true; // Desactiva el botón
+                submitBtn.textContent = "Procesando..."; // Feedback visual
+            });
         });
-    });
-</script>
+    </script>
 </body>
+
 </html>

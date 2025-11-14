@@ -48,11 +48,30 @@ public class ReservaController {
         return "reserva";
     }
 
-    // Obtener turnos disponibles por barbero
+    // Obtener turnos disponibles por barbero (endpoint original - mantener para compatibilidad)
     @GetMapping("/turnos/{barberoId}")
     @ResponseBody
     public List<Turno> obtenerTurnosDisponibles(@PathVariable Long barberoId) {
         return turnoService.obtenerTurnosDisponiblesPorBarbero(barberoId);
+    }
+
+    // NUEVO: Obtener turnos disponibles considerando la duración del servicio
+    @GetMapping("/turnos/{barberoId}/{duracion}")
+    @ResponseBody
+    public List<Turno> obtenerTurnosPorDuracion(
+            @PathVariable Long barberoId, 
+            @PathVariable Integer duracion) {
+        
+        System.out.println("=== ENDPOINT LLAMADO ===");
+        System.out.println("Barbero ID: " + barberoId);
+        System.out.println("Duración: " + duracion + " minutos");
+        
+        List<Turno> turnos = turnoService.obtenerTurnosDisponiblesPorDuracionYBarbero(barberoId, duracion);
+        
+        System.out.println("Turnos devueltos: " + turnos.size());
+        System.out.println("=======================");
+        
+        return turnos;
     }
 
     // Confirmar reserva (usa PRG para evitar duplicados)
@@ -135,6 +154,3 @@ public class ReservaController {
         return "redirect:/reserva/mis-reservas";
     }
 }
-
-
-

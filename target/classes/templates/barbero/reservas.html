@@ -7,28 +7,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        .reservation-card {
-            transition: all 0.3s;
-            border-left: 4px solid #0d6efd;
-        }
-        .reservation-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .status-badge {
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: 500;
-        }
-        .filter-tabs .nav-link {
-            color: #6c757d;
-            border: none;
-            border-bottom: 3px solid transparent;
-        }
-        .filter-tabs .nav-link.active {
-            color: #0d6efd;
-            border-bottom: 3px solid #0d6efd;
-            background: none;
+        /* Estilos para los botones de filtro activos */
+        .btn-group .btn.active {
+            background-color: #0d6efd;
+            color: white;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -56,7 +39,7 @@
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle"></i> <span th:text="${nombreBarbero}">Barbero</span>
+                            <i class="bi bi-person-circle"></i> <span th:text="${nombreBarbero ?: 'Barbero'}">Barbero</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="/barbero/perfil"><i class="bi bi-person"></i> Mi Perfil</a></li>
@@ -71,229 +54,306 @@
 
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h1><i class="bi bi-calendar-check"></i> Mis Reservas</h1>
-                <p class="text-muted">Gestiona y consulta todas tus reservas</p>
-            </div>
-            <a href="/barbero/panel" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Volver
-            </a>
+            <h1>Gestión de Reservas</h1>
         </div>
 
-        <!-- Filtros por período -->
-        <ul class="nav nav-tabs filter-tabs mb-4" id="reservasTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active" href="/barbero/reservas?filtro=hoy">
-                    <i class="bi bi-calendar-day"></i> Hoy
-                </a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" href="/barbero/reservas?filtro=semana">
-                    <i class="bi bi-calendar-week"></i> Esta Semana
-                </a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" href="/barbero/reservas?filtro=mes">
-                    <i class="bi bi-calendar-month"></i> Este Mes
-                </a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" href="/barbero/reservas?filtro=todas">
-                    <i class="bi bi-calendar3"></i> Todas
-                </a>
-            </li>
-        </ul>
-
-        <!-- Resumen de estadísticas -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card border-primary">
-                    <div class="card-body text-center">
-                        <h3 class="text-primary mb-0" th:text="${reservasHoy}">5</h3>
-                        <small class="text-muted">Reservas Hoy</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-success">
-                    <div class="card-body text-center">
-                        <h3 class="text-success mb-0" th:text="${reservasCompletadas}">12</h3>
-                        <small class="text-muted">Completadas</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-warning">
-                    <div class="card-body text-center">
-                        <h3 class="text-warning mb-0" th:text="${reservasPendientes}">3</h3>
-                        <small class="text-muted">Pendientes</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-danger">
-                    <div class="card-body text-center">
-                        <h3 class="text-danger mb-0" th:text="${reservasCanceladas}">1</h3>
-                        <small class="text-muted">Canceladas</small>
-                    </div>
-                </div>
-            </div>
+        <!-- Mensajes de alerta -->
+        <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${mensaje}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-
-        <!-- Lista de reservas -->
-        <h4 class="mb-3">Reservas - <span th:text="${fechaHoy}">Lunes, 6 de Octubre 2025</span></h4>
         
-        <div class="row" th:if="${not #lists.isEmpty(reservasHoyList)}">
-            <div class="col-12 mb-3" th:each="reserva : ${reservasHoyList}">
-                <div class="card reservation-card">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-2">
-                                <div class="text-center">
-                                    <h3 class="text-primary mb-0" th:text="${#temporals.format(reserva.fechaHoraTurno, 'hh:mm a')}">10:00 AM</h3>
-                                    <small class="text-muted" th:text="${reserva.corte != null ? reserva.corte.duracion + ' min' : '30 min'}">30 min</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <h5 class="mb-1" th:text="${reserva.cliente.nombre + ' ' + reserva.cliente.apellido}">Juan Pérez</h5>
-                                <small class="text-muted">
-                                    <i class="bi bi-telephone"></i> <span th:text="${reserva.cliente.telefono}">300-123-4567</span>
-                                </small>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-scissors fs-4 text-primary me-2"></i>
-                                    <div>
-                                        <strong th:text="${reserva.corte != null ? reserva.corte.nombreCorte : 'Corte'}">Corte Clásico</strong><br>
-                                        <small class="text-muted">$<span th:text="${reserva.corte != null ? reserva.corte.precio : '0'}">25,000</span></small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-2 text-center">
-                                <span class="status-badge" 
-                                      th:classappend="${reserva.estado == 'COMPLETADA' ? 'bg-success text-white' : (reserva.estado == 'CANCELADA' ? 'bg-danger text-white' : 'bg-warning text-dark')}" 
-                                      th:text="${reserva.estado}">Pendiente</span>
-                            </div>
-                            <div class="col-md-2 text-end">
-                                <button class="btn btn-sm btn-success me-1" 
-                                        th:if="${reserva.estado.name() == 'PENDIENTE'}" 
-                                        th:onclick="|abrirModalCompletar(${reserva.idReserva})|">
-                                    <i class="bi bi-check-circle"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger me-1" 
-                                        th:if="${reserva.estado.name() == 'PENDIENTE'}" 
-                                        th:onclick="|abrirModalCancelar(${reserva.idReserva})|">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
-                                <button class="btn btn-sm btn-info" th:onclick="|verDetalle(${reserva.idReserva})|">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Filtros con Botones -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-filter"></i> Filtrar por período:</h5>
+                </div>
+                <div class="btn-group w-100" role="group">
+                    <a href="/barbero/reservas?filtro=hoy" 
+                       th:classappend="${filtroActual == 'hoy' ? 'active' : ''}"
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-calendar-day"></i> Hoy
+                    </a>
+                    <a href="/barbero/reservas?filtro=semana" 
+                       th:classappend="${filtroActual == 'semana' ? 'active' : ''}"
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-calendar-week"></i> Esta Semana
+                    </a>
+                    <a href="/barbero/reservas?filtro=mes" 
+                       th:classappend="${filtroActual == 'mes' ? 'active' : ''}"
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-calendar-month"></i> Este Mes
+                    </a>
+                    <a href="/barbero/reservas?filtro=todas" 
+                       th:classappend="${filtroActual == 'todas' ? 'active' : ''}"
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-calendar3"></i> Todas
+                    </a>
                 </div>
             </div>
         </div>
 
-        <div th:if="${#lists.isEmpty(reservasHoyList)}" class="alert alert-info text-center">
-            <i class="bi bi-info-circle"></i> No hay reservas para mostrar en este período
+        <!-- Tabla de reservas -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Fecha Reserva</th>
+                                <th>Fecha Turno</th>
+                                <th>Cliente</th>
+                                <th>Servicio</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="reserva : ${reservasHoyList}">
+                                <td th:text="${reserva.idReserva}">1</td>
+                                <td th:text="${reserva.fechaHoraReserva != null ? #temporals.format(reserva.fechaHoraReserva, 'dd/MM/yyyy HH:mm') : 'N/A'}">01/01/2025 10:00</td>
+                                <td th:text="${reserva.fechaHoraTurno != null ? #temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm') : 'N/A'}">05/01/2025 15:30</td>
+                                <td th:text="${reserva.cliente != null ? reserva.cliente.nombre : 'N/A'}">Cliente</td>
+                                <td th:text="${reserva.corte != null ? reserva.corte.nombre : 'N/A'}">Servicio</td>
+                                <td>
+                                    <span th:class="${'badge ' + 
+                                        (reserva.estado.name() == 'PENDIENTE' ? 'bg-warning' : 
+                                        (reserva.estado.name() == 'COMPLETADA' ? 'bg-success' : 'bg-danger'))}">
+                                        <span th:text="${reserva.estado}">Estado</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-info btn-sm"
+                                                th:data-id="${reserva.idReserva}"
+                                                th:data-cliente-nombre="${reserva.cliente != null ? reserva.cliente.nombre : 'N/A'}"
+                                                th:data-cliente-telefono="${reserva.cliente != null ? reserva.cliente.telefono : 'N/A'}"
+                                                th:data-cliente-correo="${reserva.cliente != null ? reserva.cliente.correo : 'N/A'}"
+                                                th:data-servicio="${reserva.corte != null ? reserva.corte.nombre : 'N/A'}"
+                                                th:data-precio="${reserva.corte != null and reserva.corte.precio != null ? reserva.corte.precio : 0}"
+                                                th:data-duracion="${reserva.corte != null and reserva.corte.duracion != null ? reserva.corte.duracion.toString() : 'N/A'}"
+                                                th:data-fecha-hora="${reserva.fechaHoraTurno != null ? #temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy hh:mm a') : 'N/A'}"
+                                                th:data-fecha-hora-iso="${reserva.fechaHoraTurno}"
+                                                th:data-estado="${reserva.estado.name()}"
+                                                th:data-barbero="${nombreBarbero}"
+                                                onclick="verDetalle(this)">
+                                            <i class="bi bi-eye"></i> Ver
+                                        </button>
+                                        <button th:if="${reserva.estado.name() == 'PENDIENTE'}"
+                                                class="btn btn-success btn-sm"
+                                                th:data-reserva-id="${reserva.idReserva}"
+                                                th:data-cliente="${reserva.cliente != null ? reserva.cliente.nombre : 'N/A'}"
+                                                th:data-fecha="${reserva.fechaHoraTurno != null ? #temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm') : 'N/A'}"
+                                                th:data-fecha-hora-iso="${reserva.fechaHoraTurno}"
+                                                onclick="mostrarModalCompletar(this)">
+                                            <i class="bi bi-check-circle"></i> Completar
+                                        </button>
+                                        <button th:if="${reserva.estado.name() == 'PENDIENTE'}"
+                                                class="btn btn-warning btn-sm"
+                                                th:data-reserva-id="${reserva.idReserva}"
+                                                th:data-cliente="${reserva.cliente != null ? reserva.cliente.nombre : 'N/A'}"
+                                                th:data-fecha="${reserva.fechaHoraTurno != null ? #temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm') : 'N/A'}"
+                                                onclick="mostrarModalCancelar(this)">
+                                            <i class="bi bi-x-circle"></i> Cancelar
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-danger btn-sm"
+                                                th:data-reserva-id="${reserva.idReserva}"
+                                                th:data-cliente="${reserva.cliente != null ? reserva.cliente.nombre : 'N/A'}"
+                                                th:data-fecha="${reserva.fechaHoraTurno != null ? #temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm') : 'N/A'}"
+                                                onclick="mostrarModalEliminar(this)">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${reservasHoyList == null || #lists.isEmpty(reservasHoyList)}">
+                                <td colspan="7" class="text-center">No hay reservas para mostrar en este período</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Modal Completar Reserva -->
-    <div class="modal fade" id="completarModal" tabindex="-1">
-        <div class="modal-dialog">
+    <!-- Modal Completar -->
+    <div class="modal fade" id="modalCompletar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title"><i class="bi bi-check-circle"></i> Completar Reserva</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info">
-                        <strong>¿Confirmas que has completado esta reserva?</strong>
+                    <div class="text-center mb-3">
+                        <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
                     </div>
-                    <p>Esta acción marcará la reserva como completada y no se podrá revertir.</p>
+                    <p class="text-center"><strong>¿Confirmas que has completado esta reserva?</strong></p>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <p class="mb-1"><strong>Cliente:</strong> <span id="completarCliente">-</span></p>
+                            <p class="mb-0"><strong>Fecha:</strong> <span id="completarFecha">-</span></p>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-success" onclick="completarReserva()">
-                        <i class="bi bi-check-circle"></i> Completar Reserva
-                    </button>
+                    <a id="btnConfirmarCompletar" href="#" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Sí, Completar
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Cancelar Reserva -->
-    <div class="modal fade" id="cancelarModal" tabindex="-1">
-        <div class="modal-dialog">
+    <!-- Modal Advertencia - Reserva Futura -->
+    <div class="modal fade" id="modalAdvertenciaFutura" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="bi bi-x-circle"></i> Cancelar Reserva</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <strong><i class="bi bi-exclamation-triangle"></i> ¿Estás seguro de cancelar esta reserva?</strong>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Motivo de cancelación <span class="text-danger">*</span></label>
-                        <textarea id="motivoCancelacion" class="form-control" rows="3" 
-                                  placeholder="Explica el motivo de la cancelación (obligatorio)..." required></textarea>
-                        <small class="text-muted">Este motivo será registrado en el sistema.</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-danger" onclick="cancelarReserva()">
-                        <i class="bi bi-x-circle"></i> Cancelar Reserva
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Detalle Reserva -->
-    <div class="modal fade" id="detalleModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-info-circle"></i> Detalle de Reserva</h5>
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Reserva Futura</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-clock-history text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="text-center"><strong>No puedes completar esta reserva todavía</strong></p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-info-circle"></i> Solo puedes completar una reserva después de su fecha y hora programada.
+                    </div>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <p class="mb-1"><strong>Cliente:</strong> <span id="advertenciaCliente">-</span></p>
+                            <p class="mb-1"><strong>Reserva programada para:</strong> <span id="advertenciaFecha">-</span></p>
+                            <p class="mb-0"><strong>Tiempo restante:</strong> <span id="advertenciaTiempo" class="text-primary fw-bold">-</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="bi bi-check-circle"></i> Entendido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cancelar -->
+    <div class="modal fade" id="modalCancelar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="bi bi-x-circle"></i> Cancelar Reserva</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="text-center"><strong>¿Estás seguro de cancelar esta reserva?</strong></p>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <p class="mb-1"><strong>Cliente:</strong> <span id="cancelarCliente">-</span></p>
+                            <p class="mb-0"><strong>Fecha:</strong> <span id="cancelarFecha">-</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Volver</button>
+                    <a id="btnConfirmarCancelar" href="#" class="btn btn-warning">
+                        <i class="bi bi-x-circle"></i> Sí, Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Eliminar -->
+    <div class="modal fade" id="modalEliminar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-trash"></i> Eliminar Reserva</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-trash text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <p class="text-center"><strong>¿Estás seguro de eliminar esta reserva?</strong></p>
+                    <div class="alert alert-danger">
+                        <small><i class="bi bi-exclamation-triangle-fill"></i> Esta acción no se puede deshacer</small>
+                    </div>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <p class="mb-1"><strong>Cliente:</strong> <span id="eliminarCliente">-</span></p>
+                            <p class="mb-0"><strong>Fecha:</strong> <span id="eliminarFecha">-</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="btnConfirmarEliminar" href="#" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Sí, Eliminar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalle MEJORADO -->
+    <div class="modal fade" id="detalleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-info-circle"></i> Detalle de Reserva</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
                     <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-3">Información del Cliente</h6>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted"><i class="bi bi-person"></i> Información del Cliente</h6>
+                            <hr>
                             <p><strong>Nombre:</strong> <span id="detalleClienteNombre">-</span></p>
                             <p><strong>Teléfono:</strong> <span id="detalleClienteTelefono">-</span></p>
                             <p><strong>Email:</strong> <span id="detalleClienteEmail">-</span></p>
                         </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-3">Información del Servicio</h6>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted"><i class="bi bi-scissors"></i> Información del Servicio</h6>
+                            <hr>
                             <p><strong>Servicio:</strong> <span id="detalleServicio">-</span></p>
                             <p><strong>Precio:</strong> $<span id="detallePrecio">-</span></p>
-                            <p><strong>Duración:</strong> <span id="detalleDuracion">-</span> minutos</p>
+                            <p><strong>Duración:</strong> <span id="detalleDuracion">-</span></p>
                         </div>
                     </div>
-                    <hr>
                     <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Fecha:</strong> <span id="detalleFecha">-</span></p>
-                            <p><strong>Hora:</strong> <span id="detalleHora">-</span></p>
-                        </div>
-                        <div class="col-md-6">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted"><i class="bi bi-calendar-check"></i> Información de la Reserva</h6>
+                            <hr>
+                            <p><strong>Fecha y Hora:</strong> <span id="detalleFechaHora">-</span></p>
                             <p><strong>Estado:</strong> <span id="detalleEstado" class="badge">-</span></p>
                             <p><strong>ID Reserva:</strong> #<span id="detalleIdReserva">-</span></p>
                         </div>
-                    </div>
-                    <div class="mt-3" id="detalleComentariosContainer" style="display:none;">
-                        <h6 class="text-muted">Comentarios</h6>
-                        <p id="detalleComentarios" class="text-muted">Sin comentarios</p>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted"><i class="bi bi-person-badge"></i> Barbero Asignado</h6>
+                            <hr>
+                            <p><strong>Nombre:</strong> <span id="detalleBarbero">-</span></p>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cerrar
+                    </button>
                 </div>
             </div>
         </div>
@@ -301,162 +361,222 @@
 
     <!-- Footer -->
     <footer class="bg-dark text-white py-4 mt-5">
-        <div class="container text-center">
-            <p>&copy; 2025 Barbería Estilo. Panel del Barbero - Todos los derechos reservados.</p>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Barbería Estilo - Panel del Barbero</h5>
+                    <p>Sistema de gestión para barberos.</p>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
+            </div>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Variable global para almacenar el ID de la reserva actual
-        let reservaActualId = null;
+    <script th:inline="javascript">
+        const filtroActual = /*[[${filtroActual}]]*/ 'hoy';
 
-        /**
-         * Abre el modal para completar una reserva
-         */
-        function abrirModalCompletar(idReserva) {
-            reservaActualId = idReserva;
-            const modal = new bootstrap.Modal(document.getElementById('completarModal'));
+        function mostrarModalCompletar(button) {
+            const reservaId = button.getAttribute('data-reserva-id');
+            const cliente = button.getAttribute('data-cliente');
+            const fecha = button.getAttribute('data-fecha');
+            const fechaHoraISO = button.getAttribute('data-fecha-hora-iso');
+            
+            // Validar que la fecha/hora de la reserva ya haya pasado
+            const fechaReserva = new Date(fechaHoraISO);
+            const ahora = new Date();
+            
+            if (ahora < fechaReserva) {
+                // La reserva es futura, mostrar modal de advertencia
+                mostrarModalAdvertenciaFutura(cliente, fecha, fechaReserva, ahora);
+                return;
+            }
+            
+            // Si ya pasó la hora, mostrar modal de confirmación normal
+            document.getElementById('completarCliente').textContent = cliente;
+            document.getElementById('completarFecha').textContent = fecha;
+            
+            const url = `/barbero/reservas/completar/${reservaId}?filtro=${filtroActual}`;
+            document.getElementById('btnConfirmarCompletar').setAttribute('href', url);
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalCompletar'));
             modal.show();
         }
 
-        /**
-         * Completa una reserva mediante AJAX
-         */
-        function completarReserva() {
-            if (!reservaActualId) {
-                alert('Error: No se ha seleccionado ninguna reserva');
-                return;
-            }
+        function mostrarModalAdvertenciaFutura(cliente, fecha, fechaReserva, ahora) {
+            document.getElementById('advertenciaCliente').textContent = cliente;
+            document.getElementById('advertenciaFecha').textContent = fecha;
             
-            // Deshabilitar botón para evitar doble clic
-            const btnCompletar = event.target;
-            btnCompletar.disabled = true;
-            btnCompletar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+            // Calcular tiempo restante
+            const diferenciaMilisegundos = fechaReserva - ahora;
+            const tiempoRestante = calcularTiempoRestante(diferenciaMilisegundos);
+            document.getElementById('advertenciaTiempo').textContent = tiempoRestante;
             
-            fetch(`/barbero/reservas/completar/${reservaActualId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Cerrar modal
-                    bootstrap.Modal.getInstance(document.getElementById('completarModal')).hide();
-                    
-                    // Mostrar mensaje de éxito
-                    alert('✓ ' + data.message);
-                    
-                    // Recargar página para mostrar cambios
-                    location.reload();
-                } else {
-                    alert('✗ Error: ' + data.message);
-                    btnCompletar.disabled = false;
-                    btnCompletar.innerHTML = '<i class="bi bi-check-circle"></i> Completar Reserva';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('✗ Error al completar la reserva. Por favor intenta nuevamente.');
-                btnCompletar.disabled = false;
-                btnCompletar.innerHTML = '<i class="bi bi-check-circle"></i> Completar Reserva';
-            });
-        }
-
-        /**
-         * Abre el modal para cancelar una reserva
-         */
-        function abrirModalCancelar(idReserva) {
-            reservaActualId = idReserva;
-            document.getElementById('motivoCancelacion').value = ''; // Limpiar campo
-            const modal = new bootstrap.Modal(document.getElementById('cancelarModal'));
+            const modal = new bootstrap.Modal(document.getElementById('modalAdvertenciaFutura'));
             modal.show();
         }
 
-        /**
-         * Cancela una reserva mediante AJAX
-         */
-        function cancelarReserva() {
-            if (!reservaActualId) {
-                alert('Error: No se ha seleccionado ninguna reserva');
-                return;
+        function calcularTiempoRestante(milisegundos) {
+            const segundos = Math.floor(milisegundos / 1000);
+            const minutos = Math.floor(segundos / 60);
+            const horas = Math.floor(minutos / 60);
+            const dias = Math.floor(horas / 24);
+            
+            if (dias > 0) {
+                const horasRestantes = horas % 24;
+                return `${dias} día${dias > 1 ? 's' : ''} y ${horasRestantes} hora${horasRestantes !== 1 ? 's' : ''}`;
+            } else if (horas > 0) {
+                const minutosRestantes = minutos % 60;
+                return `${horas} hora${horas > 1 ? 's' : ''} y ${minutosRestantes} minuto${minutosRestantes !== 1 ? 's' : ''}`;
+            } else if (minutos > 0) {
+                return `${minutos} minuto${minutos > 1 ? 's' : ''}`;
+            } else {
+                return `${segundos} segundo${segundos !== 1 ? 's' : ''}`;
             }
-            
-            const motivo = document.getElementById('motivoCancelacion').value.trim();
-            
-            if (!motivo) {
-                alert('⚠ Debe proporcionar un motivo de cancelación');
-                document.getElementById('motivoCancelacion').focus();
-                return;
-            }
-            
-            if (motivo.length < 10) {
-                alert('⚠ El motivo debe tener al menos 10 caracteres');
-                document.getElementById('motivoCancelacion').focus();
-                return;
-            }
-            
-            // Deshabilitar botón
-            const btnCancelar = event.target;
-            btnCancelar.disabled = true;
-            btnCancelar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
-            
-            fetch(`/barbero/reservas/cancelar/${reservaActualId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ motivo: motivo })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Cerrar modal
-                    bootstrap.Modal.getInstance(document.getElementById('cancelarModal')).hide();
-                    
-                    // Mostrar mensaje de éxito
-                    alert('✓ ' + data.message);
-                    
-                    // Recargar página
-                    location.reload();
-                } else {
-                    alert('✗ Error: ' + data.message);
-                    btnCancelar.disabled = false;
-                    btnCancelar.innerHTML = '<i class="bi bi-x-circle"></i> Cancelar Reserva';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('✗ Error al cancelar la reserva. Por favor intenta nuevamente.');
-                btnCancelar.disabled = false;
-                btnCancelar.innerHTML = '<i class="bi bi-x-circle"></i> Cancelar Reserva';
-            });
         }
 
-        /**
-         * Muestra los detalles de una reserva (opcional - requiere endpoint adicional)
-         */
-        function verDetalle(idReserva) {
-            // Por ahora solo muestra el modal vacío
-            // Puedes implementar un endpoint para obtener los detalles completos
+        function mostrarModalCancelar(button) {
+            const reservaId = button.getAttribute('data-reserva-id');
+            const cliente = button.getAttribute('data-cliente');
+            const fecha = button.getAttribute('data-fecha');
+            
+            document.getElementById('cancelarCliente').textContent = cliente;
+            document.getElementById('cancelarFecha').textContent = fecha;
+            
+            const url = `/barbero/reservas/cancelar/${reservaId}?filtro=${filtroActual}`;
+            document.getElementById('btnConfirmarCancelar').setAttribute('href', url);
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalCancelar'));
+            modal.show();
+        }
+
+        function mostrarModalEliminar(button) {
+            const reservaId = button.getAttribute('data-reserva-id');
+            const cliente = button.getAttribute('data-cliente');
+            const fecha = button.getAttribute('data-fecha');
+            
+            document.getElementById('eliminarCliente').textContent = cliente;
+            document.getElementById('eliminarFecha').textContent = fecha;
+            
+            const url = `/barbero/reservas/eliminar/${reservaId}?filtro=${filtroActual}`;
+            document.getElementById('btnConfirmarEliminar').setAttribute('href', url);
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
+            modal.show();
+        }
+
+        function verDetalle(button) {
+            const id = button.getAttribute('data-id');
+            const clienteNombre = button.getAttribute('data-cliente-nombre');
+            const clienteTelefono = button.getAttribute('data-cliente-telefono');
+            const clienteCorreo = button.getAttribute('data-cliente-correo');
+            const servicio = button.getAttribute('data-servicio');
+            const precio = button.getAttribute('data-precio');
+            const duracion = button.getAttribute('data-duracion');
+            const fechaHora = button.getAttribute('data-fecha-hora');
+            const estado = button.getAttribute('data-estado');
+            const barbero = button.getAttribute('data-barbero');
+
+            console.log('=== DEBUG DURACIÓN ===');
+            console.log('Duración recibida:', duracion);
+            console.log('Tipo de dato:', typeof duracion);
+            console.log('Duración como string:', String(duracion));
+
+            document.getElementById('detalleIdReserva').textContent = id;
+            document.getElementById('detalleClienteNombre').textContent = clienteNombre;
+            document.getElementById('detalleClienteTelefono').textContent = clienteTelefono;
+            document.getElementById('detalleClienteEmail').textContent = clienteCorreo;
+            document.getElementById('detalleServicio').textContent = servicio;
+            document.getElementById('detallePrecio').textContent = new Intl.NumberFormat('es-CO').format(precio);
+            
+            // MEJORA: Mostrar la duración correctamente
+            let duracionTexto = 'No especificada';
+            
+            if (duracion && duracion !== 'N/A' && duracion !== 'null' && duracion !== '') {
+                const duracionStr = String(duracion).trim();
+                console.log('Duración procesando:', duracionStr);
+                
+                // Si es exactamente "0", mostrar mensaje especial
+                if (duracionStr === '0' || duracionStr === '0.0') {
+                    duracionTexto = 'No configurada';
+                    console.log('⚠️ ADVERTENCIA: La duración es 0. Verifica la base de datos.');
+                }
+                // Si contiene ":" es formato de tiempo (HH:mm:ss o mm:ss)
+                else if (duracionStr.includes(':')) {
+                    const partes = duracionStr.split(':');
+                    console.log('Partes separadas por ":"', partes);
+                    
+                    if (partes.length === 3) {
+                        // Formato HH:mm:ss
+                        const horas = parseInt(partes[0]);
+                        const minutos = parseInt(partes[1]);
+                        
+                        console.log('Horas:', horas, 'Minutos:', minutos);
+                        
+                        if (horas > 0) {
+                            duracionTexto = `${horas}h ${minutos}min`;
+                        } else if (minutos > 0) {
+                            duracionTexto = `${minutos} minutos`;
+                        } else {
+                            duracionTexto = 'No configurada';
+                        }
+                    } else if (partes.length === 2) {
+                        // Formato mm:ss
+                        const minutos = parseInt(partes[0]);
+                        if (minutos > 0) {
+                            duracionTexto = `${minutos} minutos`;
+                        } else {
+                            duracionTexto = 'No configurada';
+                        }
+                    }
+                } else {
+                    // Si es un número, asumimos que son minutos
+                    const mins = parseInt(duracionStr);
+                    console.log('Duración como número:', mins);
+                    
+                    if (!isNaN(mins) && mins > 0) {
+                        if (mins >= 60) {
+                            const horas = Math.floor(mins / 60);
+                            const minutosRestantes = mins % 60;
+                            if (minutosRestantes > 0) {
+                                duracionTexto = `${horas}h ${minutosRestantes}min`;
+                            } else {
+                                duracionTexto = `${horas}h`;
+                            }
+                        } else {
+                            duracionTexto = `${mins} minutos`;
+                        }
+                    } else if (mins === 0) {
+                        duracionTexto = 'No configurada';
+                        console.log('⚠️ ADVERTENCIA: La duración es 0. Verifica la base de datos.');
+                    }
+                }
+            }
+            
+            console.log('Duración procesada FINAL:', duracionTexto);
+            console.log('=====================');
+            
+            document.getElementById('detalleDuracion').textContent = duracionTexto;
+            document.getElementById('detalleFechaHora').textContent = fechaHora;
+            document.getElementById('detalleBarbero').textContent = barbero;
+            
+            const estadoBadge = document.getElementById('detalleEstado');
+            estadoBadge.textContent = estado;
+            estadoBadge.className = 'badge ';
+            
+            if (estado === 'COMPLETADA') {
+                estadoBadge.classList.add('bg-success');
+            } else if (estado === 'CANCELADA') {
+                estadoBadge.classList.add('bg-danger');
+            } else {
+                estadoBadge.classList.add('bg-warning');
+            }
+
             const modal = new bootstrap.Modal(document.getElementById('detalleModal'));
             modal.show();
-            
-            // TODO: Implementar fetch para obtener detalles completos de la reserva
-            console.log('Ver detalle de reserva:', idReserva);
         }
-
-        // Limpiar el ID de reserva cuando se cierran los modales
-        document.getElementById('completarModal').addEventListener('hidden.bs.modal', function () {
-            reservaActualId = null;
-        });
-        
-        document.getElementById('cancelarModal').addEventListener('hidden.bs.modal', function () {
-            reservaActualId = null;
-            document.getElementById('motivoCancelacion').value = '';
-        });
     </script>
 </body>
 </html>

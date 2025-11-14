@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario de Servicio - Barbería</title>
+    <title th:text="${corte.id != null ? 'Editar Servicio' : 'Nuevo Servicio'}">Servicio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
@@ -29,6 +29,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/turnos">Turnos</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Cerrar Sesión</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -36,31 +39,131 @@
 
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 th:text="${corte.id == null ? 'Nuevo Servicio' : 'Editar Servicio'}">Formulario de Servicio</h1>
-            <a href="/admin/cortes" class="btn btn-secondary">
+            <h1>
+                <i class="bi bi-scissors"></i>
+                <span th:text="${corte.id != null ? 'Editar Servicio' : 'Nuevo Servicio'}">Servicio</span>
+            </h1>
+            <a th:href="@{/admin/cortes}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Volver a la lista
             </a>
         </div>
-        
-        <div class="card">
+
+        <!-- Mensajes de error -->
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Formulario -->
+        <div class="card shadow">
             <div class="card-body">
-                <form th:action="@{/admin/cortes/guardar}" th:object="${corte}" method="post">
+                <form th:action="@{/admin/cortes/guardar}" method="post" th:object="${corte}">
+                    
+                    <!-- Campo oculto para ID (en caso de edición) -->
                     <input type="hidden" th:field="*{id}" />
-                    
+
+                    <!-- Nombre del Servicio -->
                     <div class="mb-3">
-                        <label for="nombre" class="form-label">Nombre del Servicio</label>
-                        <input type="text" class="form-control" id="nombre" th:field="*{nombre}" required>
+                        <label for="nombre" class="form-label">
+                            <i class="bi bi-scissors"></i> Nombre del Servicio
+                            <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               id="nombre" 
+                               th:field="*{nombre}"
+                               placeholder="Ej: Corte Clásico, Barba, Cejas, etc."
+                               required>
+                        <div class="form-text">Ingrese el nombre del servicio que ofrece la barbería</div>
                     </div>
-                    
+
+                    <!-- Precio -->
                     <div class="mb-3">
-                        <label for="precio" class="form-label">Precio ($)</label>
-                        <input type="number" class="form-control" id="precio" th:field="*{precio}" step="0.01" min="0" required>
+                        <label for="precio" class="form-label">
+                            <i class="bi bi-currency-dollar"></i> Precio ($)
+                            <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">$</span>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="precio" 
+                                   th:field="*{precio}"
+                                   step="0.01"
+                                   min="0"
+                                   placeholder="0.00"
+                                   required>
+                        </div>
+                        <div class="form-text">Ingrese el precio del servicio</div>
                     </div>
-                    
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save"></i> Guardar Servicio
+
+                    <!-- 🔥 NUEVO: Duración -->
+                    <div class="mb-4">
+                        <label for="duracion" class="form-label">
+                            <i class="bi bi-clock-history"></i> Duración
+                            <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select form-select-lg" 
+                                id="duracion" 
+                                th:field="*{duracion}"
+                                required>
+                            <option value="">Seleccione la duración...</option>
+                            <option value="15">15 minutos</option>
+                            <option value="30">30 minutos</option>
+                            <option value="45">45 minutos</option>
+                            <option value="60">1 hora (60 minutos)</option>
+                            <option value="75">1 hora 15 minutos (75 minutos)</option>
+                            <option value="90">1 hora 30 minutos (90 minutos)</option>
+                            <option value="105">1 hora 45 minutos (105 minutos)</option>
+                            <option value="120">2 horas (120 minutos)</option>
+                        </select>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle"></i> 
+                            Seleccione cuánto tiempo tomará realizar este servicio. 
+                            El sistema calculará automáticamente los turnos disponibles.
+                        </div>
+                    </div>
+
+                    <!-- Vista previa de información -->
+                    <div class="alert alert-info border-info" id="preview" style="display: none;">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-info-circle-fill"></i> Vista previa del servicio:
+                        </h6>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-2">
+                                    <strong><i class="bi bi-tag"></i> Servicio:</strong> 
+                                    <span id="previewNombre" class="text-primary">-</span>
+                                </p>
+                                <p class="mb-2">
+                                    <strong><i class="bi bi-currency-dollar"></i> Precio:</strong> 
+                                    $<span id="previewPrecio" class="text-success">0.00</span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2">
+                                    <strong><i class="bi bi-clock"></i> Duración:</strong> 
+                                    <span id="previewDuracion" class="text-warning">-</span>
+                                </p>
+                                <p class="mb-0">
+                                    <strong><i class="bi bi-calendar-check"></i> Turnos necesarios:</strong> 
+                                    <span id="previewTurnos" class="badge bg-primary">-</span>
+                                    <small class="text-muted">(de 15 min c/u)</small>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> 
+                            <span th:text="${corte.id != null ? 'Actualizar Servicio' : 'Guardar Servicio'}">Guardar</span>
                         </button>
+                        <a th:href="@{/admin/cortes}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
                     </div>
                 </form>
             </div>
@@ -70,18 +173,57 @@
     <!-- Footer -->
     <footer class="bg-dark text-white py-4 mt-5">
         <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Barbería Estilo - Panel de Administración</h5>
-                    <p>Sistema de gestión para administradores.</p>
-                </div>
-            </div>
-            <div class="text-center mt-4">
-                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
+            <div class="text-center">
+                <p class="mb-0">&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Vista previa dinámica
+        const nombreInput = document.getElementById('nombre');
+        const precioInput = document.getElementById('precio');
+        const duracionSelect = document.getElementById('duracion');
+        const preview = document.getElementById('preview');
+
+        function actualizarPreview() {
+            const nombre = nombreInput.value;
+            const precio = precioInput.value;
+            const duracion = duracionSelect.value;
+
+            if (nombre && precio && duracion) {
+                preview.style.display = 'block';
+                document.getElementById('previewNombre').textContent = nombre;
+                document.getElementById('previewPrecio').textContent = parseFloat(precio).toFixed(2);
+                
+                // Formatear duración
+                const duracionNum = parseInt(duracion);
+                let duracionTexto = duracionNum + ' minutos';
+                if (duracionNum >= 60) {
+                    const horas = Math.floor(duracionNum / 60);
+                    const mins = duracionNum % 60;
+                    duracionTexto = horas + ' hora' + (horas > 1 ? 's' : '');
+                    if (mins > 0) {
+                        duracionTexto += ' ' + mins + ' min';
+                    }
+                }
+                document.getElementById('previewDuracion').textContent = duracionTexto;
+                
+                // Calcular turnos necesarios
+                const turnosNecesarios = Math.ceil(duracionNum / 15);
+                document.getElementById('previewTurnos').textContent = turnosNecesarios;
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        nombreInput.addEventListener('input', actualizarPreview);
+        precioInput.addEventListener('input', actualizarPreview);
+        duracionSelect.addEventListener('change', actualizarPreview);
+
+        // Actualizar al cargar (para modo edición)
+        window.addEventListener('load', actualizarPreview);
+    </script>
 </body>
 </html>

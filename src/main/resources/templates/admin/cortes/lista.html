@@ -29,7 +29,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/admin/turnos">Turnos</a>
                     </li>
-                        <li><a class="nav-link" href="/logout"> Cerrar Sesión</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Cerrar Sesión</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -37,61 +39,111 @@
 
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Gestión de Servicios</h1>
-            <a href="/admin/cortes/nuevo" class="btn btn-primary">
+            <h1><i class="bi bi-scissors"></i> Gestión de Servicios</h1>
+            <a href="/admin/cortes/nuevo" class="btn btn-primary btn-lg">
                 <i class="bi bi-plus-circle"></i> Nuevo Servicio
             </a>
         </div>
         
         <!-- Mensajes de alerta -->
         <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
-            <span th:text="${mensaje}"></span>
+            <i class="bi bi-check-circle-fill"></i> <span th:text="${mensaje}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         
         <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span th:text="${error}"></span>
+            <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         
-        <!-- Tabla de cortes -->
-        <div class="card">
+        <!-- Tabla de servicios -->
+        <div class="card shadow">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead>
+                    <table class="table table-striped table-hover align-middle">
+                        <thead class="table-dark">
                             <tr>
                                 <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Precio</th>
-                                <th>Acciones</th>
+                                <th><i class="bi bi-tag"></i> Nombre</th>
+                                <th><i class="bi bi-currency-dollar"></i> Precio</th>
+                                <th><i class="bi bi-clock"></i> Duración</th>
+                                <th><i class="bi bi-calendar-check"></i> Turnos</th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr th:each="corte : ${cortes}">
-                                <td th:text="${corte.id}">1</td>
-                                <td th:text="${corte.nombre}">Corte Clásico</td>
-                                <td th:text="'$' + ${corte.precio}">$20.00</td>
+                                <td><strong th:text="${corte.id}">1</strong></td>
+                                <td>
+                                    <i class="bi bi-scissors text-primary"></i>
+                                    <span th:text="${corte.nombre}">Corte Clásico</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success fs-6" th:text="'$' + ${#numbers.formatDecimal(corte.precio, 1, 2)}">
+                                        $20.00
+                                    </span>
+                                </td>
+                                <td>
+                                    <span th:if="${corte.duracion != null and corte.duracion > 0}">
+                                        <i class="bi bi-clock-history text-warning"></i>
+                                        <span th:if="${corte.duracion < 60}" th:text="${corte.duracion} + ' min'">45 min</span>
+                                        <span th:if="${corte.duracion >= 60 and corte.duracion < 120}">
+                                            <span th:text="${corte.duracion / 60} + ' h'">1 h</span>
+                                            <span th:if="${corte.duracion % 60 > 0}" th:text="' ' + ${corte.duracion % 60} + ' min'">15 min</span>
+                                        </span>
+                                        <span th:if="${corte.duracion >= 120}" th:text="${corte.duracion / 60} + ' h'">2 h</span>
+                                    </span>
+                                    <span th:if="${corte.duracion == null or corte.duracion == 0}" class="text-muted">
+                                        <i class="bi bi-exclamation-triangle"></i> No definida
+                                    </span>
+                                </td>
+                                <td>
+                                    <span th:if="${corte.duracion != null and corte.duracion > 0}" 
+                                          class="badge bg-info" 
+                                          th:text="${T(java.lang.Math).ceil(corte.duracion / 15.0)} + ' slots'">
+                                        3 slots
+                                    </span>
+                                    <span th:if="${corte.duracion == null or corte.duracion == 0}" class="text-muted">-</span>
+                                </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a th:href="@{'/admin/cortes/editar/' + ${corte.id}}" class="btn btn-warning btn-sm">
+                                        <a th:href="@{'/admin/cortes/editar/' + ${corte.id}}" 
+                                           class="btn btn-warning btn-sm"
+                                           title="Editar servicio">
                                             <i class="bi bi-pencil"></i> Editar
                                         </a>
                                         <a th:href="@{'/admin/cortes/eliminar/' + ${corte.id}}" 
                                            class="btn btn-danger btn-sm"
+                                           title="Eliminar servicio"
                                            onclick="return confirm('¿Estás seguro de eliminar este servicio?')">
                                             <i class="bi bi-trash"></i> Eliminar
                                         </a>
                                     </div>
                                 </td>
                             </tr>
-                            <tr th:if="${cortes.empty}">
-                                <td colspan="4" class="text-center">No hay servicios registrados</td>
+                            <tr th:if="${cortes == null || cortes.empty}">
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                    <p class="mt-3">No hay servicios registrados</p>
+                                    <a href="/admin/cortes/nuevo" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle"></i> Crear primer servicio
+                                    </a>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+        </div>
+
+        <!-- Info adicional -->
+        <div class="alert alert-info mt-4" th:if="${cortes != null and !cortes.empty}">
+            <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Información:</h6>
+            <ul class="mb-0">
+                <li><strong>Turnos (slots):</strong> Cantidad de bloques de 15 minutos que requiere el servicio</li>
+                <li><strong>Ejemplo:</strong> Un servicio de 45 minutos necesita 3 turnos consecutivos de 15 min</li>
+                <li>Los clientes solo verán horarios disponibles que cumplan con la duración requerida</li>
+            </ul>
         </div>
     </div>
 

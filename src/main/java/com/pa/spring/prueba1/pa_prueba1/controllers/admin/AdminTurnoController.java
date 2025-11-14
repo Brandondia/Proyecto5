@@ -13,6 +13,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 @Controller
@@ -30,13 +33,32 @@ public class AdminTurnoController {
 
     @GetMapping
     @Transactional(readOnly = true)
-    public String listarTurnos(Model model) {
+    public String listarTurnos(
+            @RequestParam(required = false) String fecha,
+            Model model) {
         try {
-            List<Turno> turnos = turnoService.obtenerTodos();
-            model.addAttribute("turnos", turnos);
-            
             List<Barbero> barberos = barberoService.obtenerTodos();
             model.addAttribute("barberos", barberos);
+            
+            // Determinar la fecha de inicio de la semana
+            LocalDate fechaInicio;
+            if (fecha != null && !fecha.isEmpty()) {
+                fechaInicio = LocalDate.parse(fecha);
+            } else {
+                fechaInicio = LocalDate.now();
+            }
+            
+            // Ajustar al lunes de la semana
+            fechaInicio = fechaInicio.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate fechaFin = fechaInicio.plusDays(6); // Domingo
+            
+            // Obtener turnos de la semana
+            List<Turno> turnos = turnoService.obtenerTurnosPorRangoFechas(fechaInicio, fechaFin);
+            
+            model.addAttribute("turnos", turnos);
+            model.addAttribute("fechaInicio", fechaInicio);
+            model.addAttribute("fechaFin", fechaFin);
+            
         } catch (Exception e) {
             model.addAttribute("error", "Error al cargar los turnos: " + e.getMessage());
             e.printStackTrace();
@@ -83,6 +105,7 @@ public class AdminTurnoController {
     public String filtrarTurnos(
             @RequestParam(required = false) Long barberoId,
             @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String fecha,
             Model model) {
         
         try {
@@ -91,22 +114,34 @@ public class AdminTurnoController {
             model.addAttribute("filtroBarberoId", barberoId);
             model.addAttribute("filtroEstado", estado);
             
+            // Calcular rango de fechas de la semana
+            LocalDate fechaInicio;
+            if (fecha != null && !fecha.isEmpty()) {
+                fechaInicio = LocalDate.parse(fecha);
+            } else {
+                fechaInicio = LocalDate.now();
+            }
+            fechaInicio = fechaInicio.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate fechaFin = fechaInicio.plusDays(6);
+            
+            model.addAttribute("fechaInicio", fechaInicio);
+            model.addAttribute("fechaFin", fechaFin);
+            
             List<Turno> turnos;
             
             if (barberoId != null && estado != null && !estado.isEmpty()) {
                 Turno.EstadoTurno estadoEnum = Turno.EstadoTurno.valueOf(estado);
-                turnos = turnoService.obtenerTurnosPorBarberoYEstado(barberoId, estadoEnum);
+                turnos = turnoService.obtenerTurnosPorBarberoYEstadoYRangoFechas(
+                    barberoId, estadoEnum, fechaInicio, fechaFin);
             } else if (barberoId != null) {
-                turnos = turnoService.obtenerTurnosPorBarbero(barberoId);
+                turnos = turnoService.obtenerTurnosPorBarberoYRangoFechas(
+                    barberoId, fechaInicio, fechaFin);
             } else if (estado != null && !estado.isEmpty()) {
                 Turno.EstadoTurno estadoEnum = Turno.EstadoTurno.valueOf(estado);
-                if (estadoEnum == Turno.EstadoTurno.DISPONIBLE) {
-                    turnos = turnoService.obtenerTurnosDisponibles();
-                } else {
-                    turnos = turnoService.obtenerTurnosNoDisponibles();
-                }
+                turnos = turnoService.obtenerTurnosPorEstadoYRangoFechas(
+                    estadoEnum, fechaInicio, fechaFin);
             } else {
-                turnos = turnoService.obtenerTodos();
+                turnos = turnoService.obtenerTurnosPorRangoFechas(fechaInicio, fechaFin);
             }
             
             model.addAttribute("turnos", turnos);
