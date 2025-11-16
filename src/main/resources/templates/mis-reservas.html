@@ -1,14 +1,10 @@
-<!-- Declaración del tipo de documento y configuración de Thymeleaf -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
 <head>
-    <!-- Configuración general de la página -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Reservas - Barbería</title>
-
-    <!-- Importación de estilos de Bootstrap y Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
@@ -21,10 +17,8 @@
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <!-- Enlaces del menú -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <!-- Enlaces a otras páginas -->
                     <li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
                     <li class="nav-item"><a class="nav-link" href="/reserva">Reservar</a></li>
                     <li class="nav-item"><a class="nav-link active" href="/reserva/mis-reservas">Mis Reservas</a></li>
@@ -54,11 +48,9 @@
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-                    <!-- Tabla con las reservas del cliente -->
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
-                                <!-- Encabezados de columna -->
                                 <th>Fecha y Hora</th>
                                 <th>Barbero</th>
                                 <th>Servicio</th>
@@ -68,21 +60,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Iteración sobre la lista de reservas -->
                             <tr th:each="reserva : ${reservas}">
-                                <!-- Mostrar fecha y hora formateadas -->
                                 <td th:text="${#temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm')}">01/01/2025 10:00</td>
-                                
-                                <!-- Mostrar nombre del barbero o "N/A" si es nulo -->
                                 <td th:text="${reserva.barbero != null ? reserva.barbero.nombre : 'N/A'}">Barbero</td>
-
-                                <!-- Mostrar nombre del servicio o "N/A" si es nulo -->
                                 <td th:text="${reserva.corte != null ? reserva.corte.nombre : 'N/A'}">Servicio</td>
-
-                                <!-- Mostrar precio del servicio o "N/A" si es nulo -->
                                 <td th:text="${reserva.corte != null ? '$' + reserva.corte.precio : 'N/A'}">$20.00</td>
-
-                                <!-- Mostrar estado con color según el valor -->
                                 <td>
                                     <span th:class="${'badge ' + 
                                         (reserva.estado.name() == 'PENDIENTE' ? 'bg-warning' : 
@@ -90,24 +72,25 @@
                                         <span th:text="${reserva.estado}">Estado</span>
                                     </span>
                                 </td>
-
-                                <!-- Acción para cancelar si el estado es PENDIENTE -->
                                 <td>
-                                    <a th:if="${reserva.estado.name() == 'PENDIENTE'}" 
-                                       th:href="@{'/reserva/cancelar/' + ${reserva.idReserva}}" 
-                                       class="btn btn-danger btn-sm"
-                                       onclick="return confirm('¿Estás seguro de cancelar esta reserva?')">
+                                    <!-- Botón que abre el modal -->
+                                    <button th:if="${reserva.estado.name() == 'PENDIENTE'}" 
+                                            type="button" 
+                                            class="btn btn-danger btn-sm"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalCancelar"
+                                            th:attr="data-reserva-id=${reserva.idReserva},
+                                                     data-fecha=${#temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm')},
+                                                     data-barbero=${reserva.barbero != null ? reserva.barbero.nombre : 'N/A'}">
                                         <i class="bi bi-x-circle"></i> Cancelar
-                                    </a>
+                                    </button>
 
-                                    <!-- Si no es pendiente, mostrar texto inactivo -->
                                     <span th:if="${reserva.estado.name() != 'PENDIENTE'}" class="text-muted">
                                         No disponible
                                     </span>
                                 </td>
                             </tr>
 
-                            <!-- Mensaje si no hay reservas -->
                             <tr th:if="${reservas.empty}">
                                 <td colspan="6" class="text-center">No tienes reservas registradas</td>
                             </tr>
@@ -125,25 +108,52 @@
         </div>
     </div>
 
+    <!-- Modal de Confirmación de Cancelación -->
+    <div class="modal fade" id="modalCancelar" tabindex="-1" aria-labelledby="modalCancelarLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="modalCancelarLabel">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Confirmar Cancelación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">¿Estás seguro de que deseas cancelar esta reserva?</p>
+                    <div class="alert alert-light border">
+                        <p class="mb-1"><strong>Fecha y Hora:</strong> <span id="modalFecha"></span></p>
+                        <p class="mb-0"><strong>Barbero:</strong> <span id="modalBarbero"></span></p>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-info-circle"></i> Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg"></i> No, mantener reserva
+                    </button>
+                    <a href="#" id="btnConfirmarCancelar" class="btn btn-danger">
+                        <i class="bi bi-check-lg"></i> Sí, cancelar reserva
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Pie de página -->
     <footer class="bg-dark text-white py-4">
         <div class="container">
             <div class="row">
-                <!-- Información general -->
                 <div class="col-md-4">
                     <h5>Barbería Estilo</h5>
                     <p>El mejor lugar para tu corte de cabello y barba.</p>
                 </div>
-
-                <!-- Información de contacto -->
                 <div class="col-md-4">
                     <h5>Contacto</h5>
                     <p>Dirección: Av. Principal 123<br>
                     Teléfono: (123) 456-7890<br>
                     Email: info@barberiaestilo.com</p>
                 </div>
-
-                <!-- Horarios de atención -->
                 <div class="col-md-4">
                     <h5>Horarios</h5>
                     <p>Lunes a Viernes: 9:00 AM - 8:00 PM<br>
@@ -151,16 +161,35 @@
                     Domingos: Cerrado</p>
                 </div>
             </div>
-
-            <!-- Derechos de autor -->
             <div class="text-center mt-4">
                 <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Scripts de Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script para pasar datos al modal -->
+    <script>
+        // Cuando se abre el modal, actualizar la información
+        const modalCancelar = document.getElementById('modalCancelar');
+        modalCancelar.addEventListener('show.bs.modal', function (event) {
+            // Botón que activó el modal
+            const button = event.relatedTarget;
+            
+            // Extraer datos del botón
+            const reservaId = button.getAttribute('data-reserva-id');
+            const fecha = button.getAttribute('data-fecha');
+            const barbero = button.getAttribute('data-barbero');
+            
+            // Actualizar contenido del modal
+            document.getElementById('modalFecha').textContent = fecha;
+            document.getElementById('modalBarbero').textContent = barbero;
+            
+            // Actualizar el link de confirmación
+            const btnConfirmar = document.getElementById('btnConfirmarCancelar');
+            btnConfirmar.href = '/reserva/cancelar/' + reservaId;
+        });
+    </script>
 </body>
 </html>
-

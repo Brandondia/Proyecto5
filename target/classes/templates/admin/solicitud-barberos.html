@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitudes de Ausencias - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .solicitud-card {
+            border-left: 4px solid #0d6efd;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        .solicitud-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        .solicitud-card.pendiente {
+            border-left-color: #ffc107;
+            background: #fffef5;
+        }
+        .solicitud-card.aprobada {
+            border-left-color: #28a745;
+            background: #f5fff7;
+        }
+        .solicitud-card.rechazada {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        .barbero-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .stats-box {
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .btn-action {
+            min-width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/panel">Panel de Administración</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/panel">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/barberos">Barberos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/cortes">Servicios</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/turnos">Turnos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/reservas">Reservas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active position-relative" href="/admin/solicitudes">
+                            Solicitudes
+                            <span th:if="${totalPendientes > 0}" class="badge bg-danger ms-1" th:text="${totalPendientes}">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1><i class="bi bi-calendar-x"></i> Solicitudes de Ausencias</h1>
+                <p class="text-muted">Gestiona las solicitudes de ausencias de los barberos</p>
+            </div>
+            <a href="/admin/panel" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+
+        <!-- Mensajes de alerta -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill"></i> <span th:text="${success}">Operación exitosa</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${error}">Error</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="stats-box bg-warning bg-opacity-10">
+                    <i class="bi bi-hourglass-split fs-2 text-warning"></i>
+                    <h3 class="mt-2 mb-0" th:text="${totalPendientes}">0</h3>
+                    <small class="text-muted">Solicitudes Pendientes</small>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stats-box bg-success bg-opacity-10">
+                    <i class="bi bi-check-circle fs-2 text-success"></i>
+                    <h3 class="mt-2 mb-0" th:text="${solicitudes != null ? (#lists.size(solicitudes) - totalPendientes) : 0}">0</h3>
+                    <small class="text-muted">Procesadas</small>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stats-box bg-info bg-opacity-10">
+                    <i class="bi bi-list-ul fs-2 text-info"></i>
+                    <h3 class="mt-2 mb-0" th:text="${solicitudes != null ? #lists.size(solicitudes) : 0}">0</h3>
+                    <small class="text-muted">Total Solicitudes</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="btn-group w-100" role="group">
+                    <a th:href="@{/admin/solicitudes}" 
+                       th:classappend="${filtroActual == 'pendientes' ? 'active' : ''}"
+                       class="btn btn-outline-warning">
+                        <i class="bi bi-hourglass-split"></i> Pendientes
+                        <span th:if="${totalPendientes > 0}" class="badge bg-warning text-dark ms-1" th:text="${totalPendientes}">0</span>
+                    </a>
+                    <a th:href="@{/admin/solicitudes(filtro='todas')}" 
+                       th:classappend="${filtroActual == 'todas' ? 'active' : ''}"
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-list-ul"></i> Todas
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de solicitudes -->
+        <div class="solicitudes-list">
+            <div th:if="${solicitudes == null || #lists.isEmpty(solicitudes)}" class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No hay solicitudes para mostrar.
+            </div>
+
+            <!-- TARJETAS DE SOLICITUDES -->
+            <div th:each="solicitud : ${solicitudes}" 
+                 class="card solicitud-card"
+                 th:classappend="${solicitud.estado.name() == 'PENDIENTE' ? 'pendiente' : (solicitud.estado.name() == 'APROBADA' ? 'aprobada' : 'rechazada')}">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <!-- Avatar y datos del barbero -->
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center">
+                                <div class="barbero-avatar me-3">
+                                    <span th:text="${solicitud.barbero.nombre.substring(0,1).toUpperCase()}">B</span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0" th:text="${solicitud.barbero.nombre + ' ' + solicitud.barbero.apellido}">Nombre Barbero</h6>
+                                    <small class="text-muted">
+                                        <i class="bi bi-envelope"></i> <span th:text="${solicitud.barbero.email}">email@barbero.com</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detalles de la solicitud -->
+                        <div class="col-md-5">
+                            <div class="mb-2">
+                                <span class="badge" 
+                                      th:classappend="${solicitud.estado.name() == 'PENDIENTE' ? 'bg-warning text-dark' : (solicitud.estado.name() == 'APROBADA' ? 'bg-success' : 'bg-danger')}"
+                                      th:text="${solicitud.estado.name()}">
+                                    PENDIENTE
+                                </span>
+                                <strong class="ms-2" th:text="${solicitud.tipoAusencia.name().replace('_', ' ')}">Tipo de Ausencia</strong>
+                            </div>
+
+                            <!-- Fechas DIA_COMPLETO -->
+                            <th:block th:if="${solicitud.tipoAusencia.name() == 'DIA_COMPLETO'}">
+                                <p class="mb-1">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span th:if="${solicitud.fechaInicio != null}">
+                                        <th:block th:if="${solicitud.fechaFin != null and solicitud.fechaInicio.equals(solicitud.fechaFin)}">
+                                            <strong th:text="${#temporals.format(solicitud.fechaInicio, 'dd/MM/yyyy')}">15/10/2025</strong>
+                                        </th:block>
+                                        <th:block th:if="${solicitud.fechaFin != null and !solicitud.fechaInicio.equals(solicitud.fechaFin)}">
+                                            Del <strong th:text="${#temporals.format(solicitud.fechaInicio, 'dd/MM/yyyy')}">15/10/2025</strong>
+                                            al <strong th:text="${#temporals.format(solicitud.fechaFin, 'dd/MM/yyyy')}">20/10/2025</strong>
+                                        </th:block>
+                                        <th:block th:if="${solicitud.fechaFin == null}">
+                                            <strong th:text="${#temporals.format(solicitud.fechaInicio, 'dd/MM/yyyy')}">15/10/2025</strong>
+                                        </th:block>
+                                    </span>
+                                    <span th:if="${solicitud.fechaInicio == null}" class="text-danger">Fecha no especificada</span>
+                                </p>
+                            </th:block>
+
+                            <!-- Fechas HORAS_ESPECIFICAS -->
+                            <th:block th:if="${solicitud.tipoAusencia.name() == 'HORAS_ESPECIFICAS'}">
+                                <p class="mb-1">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span th:if="${solicitud.fecha != null}">
+                                        <strong th:text="${#temporals.format(solicitud.fecha, 'dd/MM/yyyy')}">15/10/2025</strong>
+                                    </span>
+                                    <span th:if="${solicitud.fecha == null}" class="text-danger">Fecha no especificada</span>
+                                    
+                                    <span th:if="${solicitud.horaInicio != null and solicitud.horaFin != null}" class="text-muted ms-2">
+                                        <i class="bi bi-clock"></i>
+                                        <span th:text="${#temporals.format(solicitud.horaInicio, 'HH:mm')}">08:00</span> -
+                                        <span th:text="${#temporals.format(solicitud.horaFin, 'HH:mm')}">12:00</span>
+                                    </span>
+                                </p>
+                            </th:block>
+
+                            <p class="mb-1">
+                                <i class="bi bi-chat-left-text"></i>
+                                <span th:text="${solicitud.motivo != null ? solicitud.motivo : 'Sin motivo especificado'}">Motivo de la ausencia</span>
+                            </p>
+
+                            <small class="text-muted">
+                                <i class="bi bi-clock-history"></i> 
+                                Solicitado: <span th:if="${solicitud.fechaCreacion != null}" th:text="${#temporals.format(solicitud.fechaCreacion, 'dd/MM/yyyy HH:mm')}">01/10/2025 10:30</span>
+                            </small>
+
+                            <!-- Motivo de rechazo si aplica -->
+                            <div th:if="${solicitud.estado.name() == 'RECHAZADA' and solicitud.motivoRechazo != null}" class="alert alert-danger mt-2 mb-0 py-2">
+                                <small><strong>Motivo rechazo:</strong> <span th:text="${solicitud.motivoRechazo}">Motivo</span></small>
+                            </div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="col-md-4 text-end">
+                            <div th:if="${solicitud.estado.name() == 'PENDIENTE'}">
+                                <button type="button" class="btn btn-success btn-action mb-2" 
+                                        data-bs-toggle="modal" 
+                                        th:data-bs-target="'#aprobarModal' + ${solicitud.idSolicitud}">
+                                    <i class="bi bi-check-circle"></i> Aprobar
+                                </button>
+                                <button type="button" class="btn btn-danger btn-action" 
+                                        data-bs-toggle="modal" 
+                                        th:data-bs-target="'#rechazarModal' + ${solicitud.idSolicitud}">
+                                    <i class="bi bi-x-circle"></i> Rechazar
+                                </button>
+                            </div>
+                            <div th:if="${solicitud.estado.name() != 'PENDIENTE'}">
+                                <span class="badge" 
+                                      th:classappend="${solicitud.estado.name() == 'APROBADA' ? 'bg-success' : 'bg-danger'}"
+                                      style="font-size: 1rem; padding: 0.5rem 1rem;">
+                                    <i th:classappend="${solicitud.estado.name() == 'APROBADA' ? 'bi-check-circle' : 'bi-x-circle'}"></i>
+                                    <span th:text="${solicitud.estado.name() == 'APROBADA' ? 'Aprobada' : 'Rechazada'}">Procesada</span>
+                                </span>
+                                <br>
+                                <small class="text-muted" th:if="${solicitud.fechaRespuesta != null}">
+                                    <span th:text="${#temporals.format(solicitud.fechaRespuesta, 'dd/MM/yyyy HH:mm')}">05/10/2025 14:00</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALES -->
+    <div th:each="solicitud : ${solicitudes}">
+        <!-- Modal Aprobar -->
+        <div class="modal fade" th:id="'aprobarModal' + ${solicitud.idSolicitud}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="bi bi-check-circle"></i> Aprobar Solicitud</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form th:action="@{/admin/solicitudes/{id}/aprobar(id=${solicitud.idSolicitud})}" method="POST">
+                        <div class="modal-body">
+                            <p>¿Estás seguro de que deseas aprobar esta solicitud de ausencia?</p>
+                            <div class="alert alert-info">
+                                <strong>Barbero:</strong> <span th:text="${solicitud.barbero.nombre + ' ' + solicitud.barbero.apellido}">Nombre</span><br>
+                                <strong>Tipo:</strong> <span th:text="${solicitud.tipoAusencia.name().replace('_', ' ')}">Tipo</span><br>
+                                <strong>Fecha(s):</strong>
+                                
+                                <!-- DIA_COMPLETO -->
+                                <th:block th:if="${solicitud.tipoAusencia.name() == 'DIA_COMPLETO'}">
+                                    <span th:if="${solicitud.fechaInicio != null}">
+                                        <span th:text="${#temporals.format(solicitud.fechaInicio, 'dd/MM/yyyy')}">15/10/2025</span>
+                                    </span>
+                                    <span th:if="${solicitud.fechaInicio == null}" class="text-danger">No especificado</span>
+                                    
+                                    <th:block th:if="${solicitud.fechaFin != null and solicitud.fechaInicio != null and !solicitud.fechaInicio.equals(solicitud.fechaFin)}">
+                                        - <span th:text="${#temporals.format(solicitud.fechaFin, 'dd/MM/yyyy')}">20/10/2025</span>
+                                    </th:block>
+                                </th:block>
+                                
+                                <!-- HORAS_ESPECIFICAS -->
+                                <th:block th:if="${solicitud.tipoAusencia.name() == 'HORAS_ESPECIFICAS'}">
+                                    <span th:if="${solicitud.fecha != null}">
+                                        <span th:text="${#temporals.format(solicitud.fecha, 'dd/MM/yyyy')}">15/10/2025</span>
+                                    </span>
+                                    <span th:if="${solicitud.fecha == null}" class="text-danger">No especificado</span>
+                                    
+                                    <th:block th:if="${solicitud.horaInicio != null and solicitud.horaFin != null}">
+                                        (<span th:text="${#temporals.format(solicitud.horaInicio, 'HH:mm')}">08:00</span> - 
+                                        <span th:text="${#temporals.format(solicitud.horaFin, 'HH:mm')}">12:00</span>)
+                                    </th:block>
+                                </th:block>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Comentario (opcional)</label>
+                                <textarea class="form-control" name="comentario" rows="3" placeholder="Añade un comentario si lo deseas..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Sí, aprobar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Rechazar -->
+        <div class="modal fade" th:id="'rechazarModal' + ${solicitud.idSolicitud}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title"><i class="bi bi-x-circle"></i> Rechazar Solicitud</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form th:action="@{/admin/solicitudes/{id}/rechazar(id=${solicitud.idSolicitud})}" method="POST">
+                        <div class="modal-body">
+                            <p>¿Estás seguro de que deseas rechazar esta solicitud de ausencia?</p>
+                            <div class="alert alert-warning">
+                                <strong>Barbero:</strong> <span th:text="${solicitud.barbero.nombre + ' ' + solicitud.barbero.apellido}">Nombre</span><br>
+                                <strong>Tipo:</strong> <span th:text="${solicitud.tipoAusencia.name().replace('_', ' ')}">Tipo</span><br>
+                                <strong>Fecha(s):</strong>
+                                
+                                <!-- DIA_COMPLETO -->
+                                <th:block th:if="${solicitud.tipoAusencia.name() == 'DIA_COMPLETO'}">
+                                    <span th:if="${solicitud.fechaInicio != null}">
+                                        <span th:text="${#temporals.format(solicitud.fechaInicio, 'dd/MM/yyyy')}">15/10/2025</span>
+                                    </span>
+                                    <span th:if="${solicitud.fechaInicio == null}" class="text-danger">No especificado</span>
+                                    
+                                    <th:block th:if="${solicitud.fechaFin != null and solicitud.fechaInicio != null and !solicitud.fechaInicio.equals(solicitud.fechaFin)}">
+                                        - <span th:text="${#temporals.format(solicitud.fechaFin, 'dd/MM/yyyy')}">20/10/2025</span>
+                                    </th:block>
+                                </th:block>
+                                
+                                <!-- HORAS_ESPECIFICAS -->
+                                <th:block th:if="${solicitud.tipoAusencia.name() == 'HORAS_ESPECIFICAS'}">
+                                    <span th:if="${solicitud.fecha != null}">
+                                        <span th:text="${#temporals.format(solicitud.fecha, 'dd/MM/yyyy')}">15/10/2025</span>
+                                    </span>
+                                    <span th:if="${solicitud.fecha == null}" class="text-danger">No especificado</span>
+                                    
+                                    <th:block th:if="${solicitud.horaInicio != null and solicitud.horaFin != null}">
+                                        (<span th:text="${#temporals.format(solicitud.horaInicio, 'HH:mm')}">08:00</span> - 
+                                        <span th:text="${#temporals.format(solicitud.horaFin, 'HH:mm')}">12:00</span>)
+                                    </th:block>
+                                </th:block>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Motivo del rechazo <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="comentario" rows="4" placeholder="Debes especificar el motivo del rechazo..." required></textarea>
+                                <small class="text-muted">El barbero recibirá una notificación con este motivo.</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-x-circle"></i> Sí, rechazar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2025 Barbería Estilo. Panel de Administración - Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

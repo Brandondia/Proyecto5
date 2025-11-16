@@ -40,12 +40,11 @@ public class AdminSolicitudesController {
         long pendientes = barberoService.contarSolicitudesPendientes();
         model.addAttribute("totalPendientes", pendientes);
         
-        return "admin/solicitudes-barberos";
+        return "admin/solicitud-barberos";
     }
 
     @GetMapping("/{id}")
     public String verDetalle(@PathVariable Long id, Model model) {
-        // Aquí podrías agregar una vista detallada si lo necesitas
         return "redirect:/admin/solicitudes";
     }
 
@@ -57,9 +56,16 @@ public class AdminSolicitudesController {
         try {
             String emailAdmin = authentication.getName();
             barberoService.aprobarSolicitud(id, emailAdmin, comentario);
-            redirectAttributes.addFlashAttribute("success", "Solicitud aprobada correctamente");
+            
+            redirectAttributes.addFlashAttribute("success", 
+                "Solicitud aprobada correctamente. El barbero ha sido notificado.");
+            
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error al aprobar: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", 
+                "Error al aprobar la solicitud: " + e.getMessage());
+            e.printStackTrace(); // Para debugging
         }
         
         return "redirect:/admin/solicitudes";
@@ -71,17 +77,25 @@ public class AdminSolicitudesController {
                                    Authentication authentication,
                                    RedirectAttributes redirectAttributes) {
         try {
-            String emailAdmin = authentication.getName();
-            
+            // Validar que se proporcionó un motivo
             if (comentario == null || comentario.trim().isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Debe proporcionar un motivo de rechazo");
+                redirectAttributes.addFlashAttribute("error", 
+                    "Debe proporcionar un motivo de rechazo");
                 return "redirect:/admin/solicitudes";
             }
             
+            String emailAdmin = authentication.getName();
             barberoService.rechazarSolicitud(id, emailAdmin, comentario);
-            redirectAttributes.addFlashAttribute("success", "Solicitud rechazada");
+            
+            redirectAttributes.addFlashAttribute("success", 
+                "Solicitud rechazada. El barbero ha sido notificado del motivo.");
+            
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error al rechazar: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", 
+                "Error al rechazar la solicitud: " + e.getMessage());
+            e.printStackTrace(); // Para debugging
         }
         
         return "redirect:/admin/solicitudes";

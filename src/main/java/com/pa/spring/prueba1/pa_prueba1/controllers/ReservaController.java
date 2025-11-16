@@ -33,6 +33,9 @@ public class ReservaController {
     @Autowired
     private ClienteService clienteService;
 
+    @Autowired
+    private EmailService emailService;
+
     // Mostrar página de reserva
     @GetMapping
     public String mostrarPaginaReserva(Model model, @AuthenticationPrincipal User user) {
@@ -93,31 +96,52 @@ public class ReservaController {
             return "redirect:/reserva";
         }
 
-        // Crear reserva
-        Reserva reserva = reservaService.crearReserva(
-                cliente.getIdCliente(),
-                barberoId,
-                corteId,
-                turnoId,
-                comentarios
-        );
+        try {
+            // Crear reserva
+            Reserva reserva = reservaService.crearReserva(
+                    cliente.getIdCliente(),
+                    barberoId,
+                    corteId,
+                    turnoId,
+                    comentarios
+            );
 
-        if (reserva == null) {
+            if (reserva == null) {
+                redirectAttributes.addFlashAttribute("error",
+                        "No se pudo crear la reserva. Intenta nuevamente.");
+                return "redirect:/reserva";
+            }
+
+            // ✅ ENVIAR EMAIL DE CONFIRMACIÓN
+            try {
+                emailService.notificarConfirmacionReserva(cliente, reserva);
+                System.out.println("✅ Email de confirmación enviado a: " + cliente.getCorreo());
+            } catch (Exception e) {
+                System.err.println("⚠️ No se pudo enviar el email de confirmación: " + e.getMessage());
+                // La reserva ya está creada, solo falló el email
+            }
+
+            // Pasar datos a la vista de confirmación usando redirect
+            redirectAttributes.addFlashAttribute("mensaje", "¡Reserva confirmada con éxito! Revisa tu email.");
+            redirectAttributes.addFlashAttribute("reserva", reserva);
+            redirectAttributes.addFlashAttribute("cliente", cliente);
+            redirectAttributes.addFlashAttribute("corte", corteDeCabelloService.obtenerPorId(corteId));
+            redirectAttributes.addFlashAttribute("barbero", barberoService.obtenerPorId(barberoId));
+            redirectAttributes.addFlashAttribute("turno", turnoService.obtenerPorId(turnoId));
+
+            // Redirigir para romper el ciclo del POST (PRG)
+            return "redirect:/reserva/confirmacion";
+
+        } catch (IllegalStateException e) {
+            // Errores de validación (barbero ausente, turnos no disponibles, etc.)
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/reserva";
+        } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error",
-                    "No se pudo crear la reserva. Intenta nuevamente.");
+                    "Error inesperado al crear la reserva. Por favor intenta nuevamente.");
+            e.printStackTrace();
             return "redirect:/reserva";
         }
-
-        // Pasar datos a la vista de confirmación usando redirect
-        redirectAttributes.addFlashAttribute("mensaje", "¡Reserva confirmada con éxito!");
-        redirectAttributes.addFlashAttribute("reserva", reserva);
-        redirectAttributes.addFlashAttribute("cliente", cliente);
-        redirectAttributes.addFlashAttribute("corte", corteDeCabelloService.obtenerPorId(corteId));
-        redirectAttributes.addFlashAttribute("barbero", barberoService.obtenerPorId(barberoId));
-        redirectAttributes.addFlashAttribute("turno", turnoService.obtenerPorId(turnoId));
-
-        // Redirigir para romper el ciclo del POST (PRG)
-        return "redirect:/reserva/confirmacion";
     }
 
     // Página de confirmación (se muestra después del redirect)
@@ -143,12 +167,41 @@ public class ReservaController {
                                   @AuthenticationPrincipal User user) {
         Cliente cliente = clienteService.obtenerPorCorreo(user.getUsername());
 
-        Reserva reserva = reservaService.cancelarReserva(id);
+        try {
+            Reserva reserva = reservaService.obtenerPorId(id);
+            
+            if (reserva == null) {
+                redirectAttributes.addFlashAttribute("error", "Reserva no encontrada.");
+                return "redirect:/reserva/mis-reservas";
+            }
 
-        if (reserva == null) {
-            redirectAttributes.addFlashAttribute("error", "No se pudo cancelar la reserva.");
-        } else {
-            redirectAttributes.addFlashAttribute("mensaje", "Reserva cancelada con éxito.");
+            // Verificar que la reserva pertenece al cliente
+            if (!reserva.getCliente().getIdCliente().equals(cliente.getIdCliente())) {
+                redirectAttributes.addFlashAttribute("error", "No tienes permiso para cancelar esta reserva.");
+                return "redirect:/reserva/mis-reservas";
+            }
+
+            // Cancelar la reserva
+            Reserva reservaCancelada = reservaService.cancelarReserva(id);
+
+            if (reservaCancelada == null) {
+                redirectAttributes.addFlashAttribute("error", "No se pudo cancelar la reserva.");
+                return "redirect:/reserva/mis-reservas";
+            }
+
+            // ✅ ENVIAR EMAIL DE CANCELACIÓN
+            try {
+                emailService.notificarCancelacionReserva(cliente, reservaCancelada);
+                System.out.println("✅ Email de cancelación enviado a: " + cliente.getCorreo());
+            } catch (Exception e) {
+                System.err.println("⚠️ No se pudo enviar el email de cancelación: " + e.getMessage());
+            }
+
+            redirectAttributes.addFlashAttribute("mensaje", "Reserva cancelada con éxito. Se ha enviado un email de confirmación.");
+
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al cancelar la reserva: " + e.getMessage());
+            e.printStackTrace();
         }
 
         return "redirect:/reserva/mis-reservas";

@@ -6,6 +6,8 @@ import com.pa.spring.prueba1.pa_prueba1.repository.UsuarioRepository;
 import com.pa.spring.prueba1.pa_prueba1.repository.BarberoRepository;
 import com.pa.spring.prueba1.pa_prueba1.repository.CorteDeCabelloRepository;
 import com.pa.spring.prueba1.pa_prueba1.repository.ReservaRepository;
+import com.pa.spring.prueba1.pa_prueba1.service.barbero.BarberoService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -19,6 +21,9 @@ public class AdminController {
     private final BarberoRepository barberoRepository;
     private final CorteDeCabelloRepository corteRepository;
     private final ReservaRepository reservaRepository;
+    
+    @Autowired
+    private BarberoService barberoService;
 
     public AdminController(UsuarioRepository usuarioRepository,
                            BarberoRepository barberoRepository,
@@ -42,17 +47,22 @@ public class AdminController {
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + emailOrUsername));
         
         model.addAttribute("admin", admin);
+        model.addAttribute("nombreAdmin", admin.getUsername());
 
         // Estadísticas
         long totalClientes = usuarioRepository.count();
         long totalBarberos = barberoRepository.count();
         long totalServicios = corteRepository.count();
         long reservasPendientes = reservaRepository.countByEstado(Reserva.EstadoReserva.PENDIENTE);
+        
+        // ✅ NUEVO: Contador de solicitudes de ausencias pendientes
+        long totalPendientes = barberoService.contarSolicitudesPendientes();
 
         model.addAttribute("totalClientes", totalClientes);
         model.addAttribute("totalBarberos", totalBarberos);
         model.addAttribute("totalServicios", totalServicios);
         model.addAttribute("reservasPendientes", reservasPendientes);
+        model.addAttribute("totalPendientes", totalPendientes); // ✅ NUEVO
 
         return "/admin/panel";
     }

@@ -12,8 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Map;
 
 @Controller
@@ -22,6 +22,9 @@ public class PerfilController {
 
     private final BarberoService barberoService;
     private final PerfilService perfilService;
+    
+    private static final DateTimeFormatter FORMATO_FECHA = 
+        DateTimeFormatter.ofPattern("d 'de' MMMM, yyyy", new Locale("es", "ES"));
 
     @Autowired
     public PerfilController(BarberoService barberoService, PerfilService perfilService) {
@@ -49,13 +52,11 @@ public class PerfilController {
             model.addAttribute("barbero", barbero);
             
             // Información personal
-            model.addAttribute("nombreCompleto", barbero.getNombre() + 
-                    (barbero.getApellido() != null ? " " + barbero.getApellido() : ""));
+            model.addAttribute("nombreCompleto", barbero.getNombreCompleto());
             model.addAttribute("documento", barbero.getDocumento() != null ? 
                     barbero.getDocumento() : "No registrado");
             model.addAttribute("fechaNacimiento", barbero.getFechaNacimiento() != null ? 
-                    barbero.getFechaNacimiento().format(DateTimeFormatter.ofPattern("d 'de' MMMM, yyyy", 
-                    java.util.Locale.forLanguageTag("es"))) : "No registrada");
+                    barbero.getFechaNacimiento().format(FORMATO_FECHA) : "No registrada");
             model.addAttribute("email", barbero.getEmail());
             model.addAttribute("telefono", barbero.getTelefono() != null ? 
                     barbero.getTelefono() : "No registrado");
@@ -66,34 +67,25 @@ public class PerfilController {
             model.addAttribute("anosExperiencia", barbero.getExperienciaAnios() != null ? 
                     barbero.getExperienciaAnios() + " años" : "No especificado");
             model.addAttribute("fechaIngreso", barbero.getFechaIngreso() != null ? 
-                    barbero.getFechaIngreso().format(DateTimeFormatter.ofPattern("d 'de' MMMM, yyyy", 
-                    java.util.Locale.forLanguageTag("es"))) : "No registrada");
+                    barbero.getFechaIngreso().format(FORMATO_FECHA) : "No registrada");
             model.addAttribute("especialidad", barbero.getEspecialidad() != null ? 
                     barbero.getEspecialidad() : "Barbero General");
-            model.addAttribute("certificaciones", barbero.getCertificaciones());
+            model.addAttribute("certificaciones", barbero.getCertificaciones() != null ?
+                    barbero.getCertificaciones() : "Sin certificaciones registradas");
             
             // Estadísticas
             Map<String, Object> estadisticas = perfilService.obtenerEstadisticasBarbero(barbero.getIdBarbero());
-            model.addAttribute("cortesEsteMes", estadisticas.get("cortesEsteMes"));
-            model.addAttribute("ingresos", estadisticas.get("ingresos"));
-            model.addAttribute("satisfaccion", estadisticas.get("satisfaccion"));
-            model.addAttribute("valoracion", estadisticas.get("valoracion"));
-            model.addAttribute("totalValoraciones", estadisticas.get("totalValoraciones"));
-            model.addAttribute("clientesAtendidos", estadisticas.get("clientesAtendidos"));
+            model.addAllAttributes(estadisticas);
             
             // Seguridad
             model.addAttribute("ultimaSesion", barbero.getUltimaSesion() != null ? 
                     perfilService.formatearUltimaSesion(barbero.getUltimaSesion()) : "Nunca");
             
             // Preferencias
-            model.addAttribute("notifReservas", barbero.getNotifReservas() != null ? 
-                    barbero.getNotifReservas() : true);
-            model.addAttribute("notifCancelaciones", barbero.getNotifCancelaciones() != null ? 
-                    barbero.getNotifCancelaciones() : true);
-            model.addAttribute("notifRecordatorios", barbero.getNotifRecordatorios() != null ? 
-                    barbero.getNotifRecordatorios() : true);
-            model.addAttribute("autenticacionDosPasos", barbero.getAutenticacionDosPasos() != null ? 
-                    barbero.getAutenticacionDosPasos() : false);
+            model.addAttribute("notifReservas", barbero.getNotifReservas());
+            model.addAttribute("notifCancelaciones", barbero.getNotifCancelaciones());
+            model.addAttribute("notifRecordatorios", barbero.getNotifRecordatorios());
+            model.addAttribute("autenticacionDosPasos", barbero.getAutenticacionDosPasos());
             
             // Foto de perfil
             model.addAttribute("fotoPerfil", barbero.getFotoPerfil() != null ? 
@@ -101,6 +93,7 @@ public class PerfilController {
 
         } catch (Exception e) {
             model.addAttribute("error", "Error al cargar perfil: " + e.getMessage());
+            e.printStackTrace();
         }
         return "barbero/perfil";
     }
@@ -116,9 +109,12 @@ public class PerfilController {
             Barbero barbero = obtenerBarberoActual(auth);
 
             // Actualizar campos
-            if (params.containsKey("nombre")) {
-                barbero.setNombre(params.get("nombre"));
+            String[] nombreCompleto = params.get("nombre").split(" ", 2);
+            barbero.setNombre(nombreCompleto[0]);
+            if (nombreCompleto.length > 1) {
+                barbero.setApellido(nombreCompleto[1]);
             }
+            
             if (params.containsKey("documento")) {
                 barbero.setDocumento(params.get("documento"));
             }
@@ -137,10 +133,11 @@ public class PerfilController {
             }
 
             barberoService.actualizarBarbero(barbero);
-            redirectAttributes.addFlashAttribute("mensaje", "Información personal actualizada correctamente");
+            redirectAttributes.addFlashAttribute("mensaje", "✅ Información personal actualizada correctamente");
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error al actualizar: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "❌ Error al actualizar: " + e.getMessage());
+            e.printStackTrace();
         }
         return "redirect:/barbero/perfil";
     }
@@ -164,23 +161,26 @@ public class PerfilController {
             
             // Construir especialidades desde checkboxes
             StringBuilder especialidades = new StringBuilder();
-            if (params.containsKey("esp1")) especialidades.append("Cortes Clásicos,");
-            if (params.containsKey("esp2")) especialidades.append("Fade,");
-            if (params.containsKey("esp3")) especialidades.append("Barba,");
-            if (params.containsKey("esp4")) especialidades.append("Degradados,");
-            if (params.containsKey("esp5")) especialidades.append("Rapado,");
-            if (params.containsKey("esp6")) especialidades.append("Diseño,");
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                if (entry.getKey().startsWith("esp") && entry.getKey().length() == 4) {
+                    String[] partes = entry.getValue().split(",");
+                    if (partes.length > 0) {
+                        especialidades.append(partes[0]).append(",");
+                    }
+                }
+            }
             
             if (especialidades.length() > 0) {
-                especialidades.deleteCharAt(especialidades.length() - 1); // Quitar última coma
+                especialidades.deleteCharAt(especialidades.length() - 1);
                 barbero.setEspecialidad(especialidades.toString());
             }
 
             barberoService.actualizarBarbero(barbero);
-            redirectAttributes.addFlashAttribute("mensaje", "Información profesional actualizada correctamente");
+            redirectAttributes.addFlashAttribute("mensaje", "✅ Información profesional actualizada correctamente");
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error al actualizar: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "❌ Error al actualizar: " + e.getMessage());
+            e.printStackTrace();
         }
         return "redirect:/barbero/perfil";
     }
@@ -195,27 +195,26 @@ public class PerfilController {
                                   Authentication auth,
                                   RedirectAttributes redirectAttributes) {
         try {
-            // Validar que las contraseñas coincidan
             if (!passwordNueva.equals(passwordConfirmar)) {
-                redirectAttributes.addFlashAttribute("error", "Las contraseñas nuevas no coinciden");
+                redirectAttributes.addFlashAttribute("error", "❌ Las contraseñas nuevas no coinciden");
                 return "redirect:/barbero/perfil";
             }
             
-            // Validar longitud mínima
             if (passwordNueva.length() < 8) {
-                redirectAttributes.addFlashAttribute("error", "La contraseña debe tener al menos 8 caracteres");
+                redirectAttributes.addFlashAttribute("error", "❌ La contraseña debe tener al menos 8 caracteres");
                 return "redirect:/barbero/perfil";
             }
 
             String email = auth.getName();
             perfilService.cambiarPassword(email, passwordActual, passwordNueva);
             
-            redirectAttributes.addFlashAttribute("mensaje", "Contraseña cambiada correctamente");
+            redirectAttributes.addFlashAttribute("mensaje", "✅ Contraseña cambiada correctamente");
 
         } catch (IllegalArgumentException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "❌ " + e.getMessage());
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error al cambiar contraseña: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "❌ Error al cambiar contraseña: " + e.getMessage());
+            e.printStackTrace();
         }
         return "redirect:/barbero/perfil";
     }
@@ -228,23 +227,20 @@ public class PerfilController {
                              Authentication auth,
                              RedirectAttributes redirectAttributes) {
         try {
-            // Validar archivo
             if (foto.isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Debe seleccionar una foto");
+                redirectAttributes.addFlashAttribute("error", "❌ Debe seleccionar una foto");
                 return "redirect:/barbero/perfil";
             }
             
-            // Validar tamaño (máximo 2MB)
             if (foto.getSize() > 2 * 1024 * 1024) {
-                redirectAttributes.addFlashAttribute("error", "La foto no debe superar los 2MB");
+                redirectAttributes.addFlashAttribute("error", "❌ La foto no debe superar los 2MB");
                 return "redirect:/barbero/perfil";
             }
             
-            // Validar tipo de archivo
             String contentType = foto.getContentType();
             if (contentType == null || (!contentType.equals("image/jpeg") && 
                 !contentType.equals("image/png") && !contentType.equals("image/jpg"))) {
-                redirectAttributes.addFlashAttribute("error", "Solo se permiten imágenes JPG o PNG");
+                redirectAttributes.addFlashAttribute("error", "❌ Solo se permiten imágenes JPG o PNG");
                 return "redirect:/barbero/perfil";
             }
 
@@ -254,10 +250,11 @@ public class PerfilController {
             barbero.setFotoPerfil(rutaFoto);
             barberoService.actualizarBarbero(barbero);
             
-            redirectAttributes.addFlashAttribute("mensaje", "Foto de perfil actualizada correctamente");
+            redirectAttributes.addFlashAttribute("mensaje", "✅ Foto de perfil actualizada correctamente");
 
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error al subir foto: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "❌ Error al subir foto: " + e.getMessage());
+            e.printStackTrace();
         }
         return "redirect:/barbero/perfil";
     }
@@ -273,7 +270,6 @@ public class PerfilController {
         try {
             Barbero barbero = obtenerBarberoActual(auth);
             
-            // Actualizar preferencias de notificaciones
             if (preferencias.containsKey("notifReservas")) {
                 barbero.setNotifReservas((Boolean) preferencias.get("notifReservas"));
             }
@@ -287,11 +283,12 @@ public class PerfilController {
             barberoService.actualizarBarbero(barbero);
             
             response.put("success", true);
-            response.put("message", "Preferencias guardadas correctamente");
+            response.put("message", "✅ Preferencias guardadas correctamente");
             
         } catch (Exception e) {
             response.put("success", false);
-            response.put("message", "Error al guardar preferencias: " + e.getMessage());
+            response.put("message", "❌ Error al guardar preferencias: " + e.getMessage());
+            e.printStackTrace();
         }
         return response;
     }
@@ -311,12 +308,13 @@ public class PerfilController {
             
             response.put("success", true);
             response.put("message", activar ? 
-                    "Autenticación en dos pasos activada" : 
-                    "Autenticación en dos pasos desactivada");
+                    "✅ Autenticación en dos pasos activada" : 
+                    "⚠️ Autenticación en dos pasos desactivada");
             
         } catch (Exception e) {
             response.put("success", false);
-            response.put("message", "Error al cambiar configuración: " + e.getMessage());
+            response.put("message", "❌ Error al cambiar configuración: " + e.getMessage());
+            e.printStackTrace();
         }
         return response;
     }
@@ -327,6 +325,6 @@ public class PerfilController {
     private String generarAvatarURL(String nombre) {
         String nombreEncoded = nombre.replace(" ", "+");
         return "https://ui-avatars.com/api/?name=" + nombreEncoded + 
-               "&size=200&background=0d6efd&color=fff";
+               "&size=200&background=667eea&color=fff&bold=true";
     }
 }

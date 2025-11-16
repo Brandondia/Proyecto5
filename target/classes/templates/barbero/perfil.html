@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -96,13 +95,9 @@
                             <i class="bi bi-person-circle"></i> <span th:text="${nombreBarbero}">Barbero</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item active" href="/barbero/perfil"><i class="bi bi-person"></i> Mi
-                                    Perfil</a></li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar
-                                    Sesión</a></li>
+                            <li><a class="dropdown-item active" href="/barbero/perfil"><i class="bi bi-person"></i> Mi Perfil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -115,14 +110,16 @@
         <div class="profile-header">
             <div class="row align-items-center">
                 <div class="col-md-3 text-center">
-                    <img src="https://ui-avatars.com/api/?name=Juan+Perez&size=200&background=0d6efd&color=fff"
-                        class="profile-avatar" alt="Perfil">
+                    <img th:src="${fotoPerfil != null ? fotoPerfil : 'https://ui-avatars.com/api/?name=' + nombreBarbero + '&size=200&background=667eea&color=fff'}"
+                         class="profile-avatar" 
+                         alt="Perfil"
+                         onerror="this.src='https://ui-avatars.com/api/?name=Usuario&size=200&background=667eea&color=fff'">
                     <button class="btn btn-light btn-sm mt-3" data-bs-toggle="modal" data-bs-target="#cambiarFotoModal">
                         <i class="bi bi-camera"></i> Cambiar Foto
                     </button>
                 </div>
                 <div class="col-md-9">
-                    <h1 class="mb-2" th:text="${nombreBarbero}">Juan Pérez</h1>
+                    <h1 class="mb-2" th:text="${nombreCompleto}">Juan Pérez</h1>
                     <p class="mb-2 fs-5"><i class="bi bi-scissors"></i> Barbero Profesional</p>
                     <p class="mb-3">
                         <i class="bi bi-star-fill text-warning"></i>
@@ -130,13 +127,16 @@
                         <i class="bi bi-star-fill text-warning"></i>
                         <i class="bi bi-star-fill text-warning"></i>
                         <i class="bi bi-star-half text-warning"></i>
-                        <strong>4.8</strong> <span class="opacity-75">(124 valoraciones)</span>
+                        <strong th:text="${valoracion}">4.8</strong> 
+                        <span class="opacity-75">(<span th:text="${totalValoraciones}">124</span> valoraciones)</span>
                     </p>
                     <div>
-                        <span class="badge bg-light text-dark me-2"><i class="bi bi-calendar-check"></i> 5 años de
-                            experiencia</span>
-                        <span class="badge bg-light text-dark"><i class="bi bi-people"></i> 1,250+ clientes
-                            atendidos</span>
+                        <span class="badge bg-light text-dark me-2">
+                            <i class="bi bi-calendar-check"></i> <span th:text="${anosExperiencia}">5 años de experiencia</span>
+                        </span>
+                        <span class="badge bg-light text-dark">
+                            <i class="bi bi-people"></i> <span th:text="${clientesAtendidos}">1,250</span>+ clientes atendidos
+                        </span>
                     </div>
                 </div>
             </div>
@@ -159,8 +159,7 @@
                 <div class="card profile-card">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-person"></i> Información Personal</h5>
-                        <button class="btn btn-light btn-sm edit-btn" data-bs-toggle="modal"
-                            data-bs-target="#editarInfoModal">
+                        <button class="btn btn-light btn-sm edit-btn" data-bs-toggle="modal" data-bs-target="#editarInfoModal">
                             <i class="bi bi-pencil"></i> Editar
                         </button>
                     </div>
@@ -196,8 +195,7 @@
                 <div class="card profile-card">
                     <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-briefcase"></i> Información Profesional</h5>
-                        <button class="btn btn-light btn-sm edit-btn" data-bs-toggle="modal"
-                            data-bs-target="#editarProfesionalModal">
+                        <button class="btn btn-light btn-sm edit-btn" data-bs-toggle="modal" data-bs-target="#editarProfesionalModal">
                             <i class="bi bi-pencil"></i> Editar
                         </button>
                     </div>
@@ -212,21 +210,19 @@
                         </div>
                         <div class="info-item">
                             <div class="info-label">Especialidades</div>
-                            <div class="mt-2">
-                                <span class="specialty-badge bg-primary text-white">Cortes Clásicos</span>
-                                <span class="specialty-badge bg-primary text-white">Fade</span>
-                                <span class="specialty-badge bg-primary text-white">Barba</span>
-                                <span class="specialty-badge bg-primary text-white">Degradados</span>
+                            <div class="mt-2" th:if="${especialidad != null and especialidad != 'Barbero General'}">
+                                <th:block th:each="esp : ${#strings.arraySplit(especialidad, ',')}">
+                                    <span class="specialty-badge bg-primary text-white" th:text="${esp}">Especialidad</span>
+                                </th:block>
+                            </div>
+                            <div class="mt-2" th:unless="${especialidad != null and especialidad != 'Barbero General'}">
+                                <span class="text-muted">Sin especialidades definidas</span>
                             </div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Certificaciones</div>
                             <div class="info-value">
-                                <ul class="mb-0">
-                                    <li>Barbería Profesional - SENA (2019)</li>
-                                    <li>Técnicas Avanzadas de Fade - Academia Style (2021)</li>
-                                    <li>Barbería Clásica - Instituto Nacional (2022)</li>
-                                </ul>
+                                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;" th:text="${certificaciones}">Sin certificaciones</pre>
                             </div>
                         </div>
                     </div>
@@ -243,8 +239,7 @@
                         <div class="info-item">
                             <div class="info-label">Contraseña</div>
                             <div class="info-value">••••••••</div>
-                            <button class="btn btn-outline-primary btn-sm mt-2" data-bs-toggle="modal"
-                                data-bs-target="#cambiarPasswordModal">
+                            <button class="btn btn-outline-primary btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#cambiarPasswordModal">
                                 <i class="bi bi-key"></i> Cambiar Contraseña
                             </button>
                         </div>
@@ -255,7 +250,8 @@
                         <div class="info-item">
                             <div class="info-label">Autenticación en Dos Pasos</div>
                             <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" id="twoFactorAuth">
+                                <input class="form-check-input" type="checkbox" id="twoFactorAuth" 
+                                       th:checked="${autenticacionDosPasos}">
                                 <label class="form-check-label" for="twoFactorAuth">
                                     Activar autenticación en dos pasos (Recomendado)
                                 </label>
@@ -282,18 +278,14 @@
                         </div>
                         <div class="row text-center">
                             <div class="col-6">
-                                <h3 class="text-warning mb-0">96%</h3>
+                                <h3 class="text-warning mb-0" th:text="${satisfaccion + '%'}">96%</h3>
                                 <small class="text-muted">Satisfacción</small>
                             </div>
                             <div class="col-6">
-                                <h3 class="text-info mb-0">4.8/5</h3>
+                                <h3 class="text-info mb-0" th:text="${valoracion + '/5'}">4.8/5</h3>
                                 <small class="text-muted">Valoración</small>
                             </div>
                         </div>
-                        <hr>
-                        <a href="/barbero/estadisticas" class="btn btn-info w-100">
-                            <i class="bi bi-bar-chart"></i> Ver Estadísticas Completas
-                        </a>
                     </div>
                 </div>
 
@@ -306,33 +298,28 @@
                         <div class="mb-3">
                             <label class="form-label">Notificaciones por Email</label>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="notifReservas" checked>
+                                <input class="form-check-input" type="checkbox" id="notifReservas" 
+                                       th:checked="${notifReservas}">
                                 <label class="form-check-label" for="notifReservas">
                                     Nuevas reservas
                                 </label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="notifCancelaciones" checked>
+                                <input class="form-check-input" type="checkbox" id="notifCancelaciones" 
+                                       th:checked="${notifCancelaciones}">
                                 <label class="form-check-label" for="notifCancelaciones">
                                     Cancelaciones
                                 </label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="notifRecordatorios" checked>
+                                <input class="form-check-input" type="checkbox" id="notifRecordatorios" 
+                                       th:checked="${notifRecordatorios}">
                                 <label class="form-check-label" for="notifRecordatorios">
                                     Recordatorios de citas
                                 </label>
                             </div>
                         </div>
-                        <hr>
-                        <div class="mb-3">
-                            <label class="form-label">Idioma</label>
-                            <select class="form-select">
-                                <option selected>Español</option>
-                                <option>English</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-primary w-100">
+                        <button class="btn btn-primary w-100" id="btnGuardarPreferencias">
                             <i class="bi bi-save"></i> Guardar Preferencias
                         </button>
                     </div>
@@ -354,35 +341,36 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nombre Completo</label>
-                                <input type="text" class="form-control" name="nombre" value="Juan Carlos Pérez García"
-                                    required>
+                                <input type="text" class="form-control" name="nombre" 
+                                       th:value="${nombreCompleto}" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Documento de Identidad</label>
-                                <input type="text" class="form-control" name="documento" value="1234567890" required>
+                                <input type="text" class="form-control" name="documento" 
+                                       th:value="${documento != 'No registrado' ? documento : ''}" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Fecha de Nacimiento</label>
-                                <input type="date" class="form-control" name="fechaNacimiento" value="1990-03-15"
-                                    required>
+                                <input type="date" class="form-control" name="fechaNacimiento" 
+                                       th:value="${barbero.fechaNacimiento}" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Teléfono</label>
-                                <input type="tel" class="form-control" name="telefono" value="+57 300 123 4567"
-                                    required>
+                                <input type="tel" class="form-control" name="telefono" 
+                                       th:value="${telefono != 'No registrado' ? telefono : ''}" required>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Email</label>
-                            <input type="email" class="form-control" name="email" value="juan.perez@barberia.com"
-                                required>
+                            <input type="email" class="form-control" name="email" 
+                                   th:value="${email}" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Dirección</label>
-                            <input type="text" class="form-control" name="direccion" value="Calle 45 #23-10, Cartagena"
-                                required>
+                            <input type="text" class="form-control" name="direccion" 
+                                   th:value="${direccion != 'No registrada' ? direccion : ''}" required>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -408,44 +396,46 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">Años de Experiencia</label>
-                            <input type="number" class="form-control" name="experiencia" value="5" min="0" required>
+                            <input type="number" class="form-control" name="experiencia" 
+                                   th:value="${barbero.experienciaAnios}" min="0" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Especialidades</label>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="esp1" checked>
+                                        <input class="form-check-input" type="checkbox" name="esp1" value="Cortes Clásicos" id="esp1">
                                         <label class="form-check-label" for="esp1">Cortes Clásicos</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="esp2" checked>
+                                        <input class="form-check-input" type="checkbox" name="esp2" value="Fade" id="esp2">
                                         <label class="form-check-label" for="esp2">Fade</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="esp3" checked>
+                                        <input class="form-check-input" type="checkbox" name="esp3" value="Barba" id="esp3">
                                         <label class="form-check-label" for="esp3">Barba</label>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="esp4" checked>
+                                        <input class="form-check-input" type="checkbox" name="esp4" value="Degradados" id="esp4">
                                         <label class="form-check-label" for="esp4">Degradados</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="esp5">
+                                        <input class="form-check-input" type="checkbox" name="esp5" value="Rapado" id="esp5">
                                         <label class="form-check-label" for="esp5">Rapado</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="esp6">
+                                        <input class="form-check-input" type="checkbox" name="esp6" value="Diseño" id="esp6">
                                         <label class="form-check-label" for="esp6">Diseño</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Certificaciones</label>
-                            <textarea class="form-control" rows="4" name="certificaciones">Barbería Profesional - SENA (2019)
+                            <label class="form-label">Certificaciones (una por línea)</label>
+                            <textarea class="form-control" rows="4" name="certificaciones" 
+                                      th:text="${certificaciones}">Barbería Profesional - SENA (2019)
 Técnicas Avanzadas de Fade - Academia Style (2021)
 Barbería Clásica - Instituto Nacional (2022)</textarea>
                         </div>
@@ -477,8 +467,7 @@ Barbería Clásica - Instituto Nacional (2022)</textarea>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Nueva Contraseña</label>
-                            <input type="password" class="form-control" name="passwordNueva" id="passwordNueva"
-                                required>
+                            <input type="password" class="form-control" name="passwordNueva" id="passwordNueva" required>
                             <small class="text-muted">Mínimo 8 caracteres</small>
                         </div>
                         <div class="mb-3">
@@ -507,11 +496,15 @@ Barbería Clásica - Instituto Nacional (2022)</textarea>
                 </div>
                 <form action="/barbero/perfil/cambiar-foto" method="POST" enctype="multipart/form-data">
                     <div class="modal-body text-center">
-                        <img src="https://ui-avatars.com/api/?name=Juan+Perez&size=200&background=0d6efd&color=fff"
-                            class="profile-avatar mb-3" id="previewFoto" alt="Preview">
+                        <img th:src="${fotoPerfil != null ? fotoPerfil : 'https://ui-avatars.com/api/?name=' + nombreBarbero + '&size=200&background=667eea&color=fff'}"
+                             class="profile-avatar mb-3" 
+                             id="previewFoto" 
+                             alt="Preview"
+                             onerror="this.src='https://ui-avatars.com/api/?name=Usuario&size=200&background=667eea&color=fff'">
                         <div class="mb-3">
-                            <input type="file" class="form-control" name="foto" accept="image/*" required>
-                            <small class="text-muted">Formatos permitidos: JPG, PNG. Máximo 2MB</small>
+                            <input type="file" class="form-control" name="foto" id="inputFoto" 
+                                   accept="image/jpeg,image/jpg,image/png" required>
+                            <small class="text-muted">Formatos: JPG, PNG. Máximo 2MB</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -533,16 +526,14 @@ Barbería Clásica - Instituto Nacional (2022)</textarea>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Agregar al final del body, antes del cierre de </body> -->
-
+    
     <script>
         // ==================== GUARDAR PREFERENCIAS ====================
-        document.getElementById('btnGuardarPreferencias')?.addEventListener('click', function () {
+        document.getElementById('btnGuardarPreferencias')?.addEventListener('click', function() {
             const preferencias = {
-                notifReservas: document.getElementById('notifReservas').checked,
-                notifCancelaciones: document.getElementById('notifCancelaciones').checked,
-                notifRecordatorios: document.getElementById('notifRecordatorios').checked
+                notifReservas: document.getElementById('notifReservas')?.checked || false,
+                notifCancelaciones: document.getElementById('notifCancelaciones')?.checked || false,
+                notifRecordatorios: document.getElementById('notifRecordatorios')?.checked || false
             };
 
             fetch('/barbero/perfil/guardar-preferencias', {
@@ -552,22 +543,18 @@ Barbería Clásica - Instituto Nacional (2022)</textarea>
                 },
                 body: JSON.stringify(preferencias)
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        mostrarMensaje('success', data.message);
-                    } else {
-                        mostrarMensaje('error', data.message);
-                    }
-                })
-                .catch(error => {
-                    mostrarMensaje('error', 'Error al guardar preferencias');
-                    console.error('Error:', error);
-                });
+            .then(response => response.json())
+            .then(data => {
+                mostrarMensaje(data.success ? 'success' : 'error', data.message);
+            })
+            .catch(error => {
+                mostrarMensaje('error', '❌ Error al guardar preferencias');
+                console.error('Error:', error);
+            });
         });
 
         // ==================== AUTENTICACIÓN EN DOS PASOS ====================
-        document.getElementById('twoFactorAuth')?.addEventListener('change', function () {
+        document.getElementById('twoFactorAuth')?.addEventListener('change', function() {
             const activar = this.checked;
 
             fetch('/barbero/perfil/toggle-2fa?activar=' + activar, {
@@ -576,114 +563,102 @@ Barbería Clásica - Instituto Nacional (2022)</textarea>
                     'Content-Type': 'application/json'
                 }
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        mostrarMensaje('success', data.message);
-                    } else {
-                        mostrarMensaje('error', data.message);
-                        // Revertir el checkbox si hay error
-                        this.checked = !activar;
-                    }
-                })
-                .catch(error => {
-                    mostrarMensaje('error', 'Error al cambiar configuración');
+            .then(response => response.json())
+            .then(data => {
+                mostrarMensaje(data.success ? 'success' : 'error', data.message);
+                if (!data.success) {
                     this.checked = !activar;
-                    console.error('Error:', error);
-                });
+                }
+            })
+            .catch(error => {
+                mostrarMensaje('error', '❌ Error al cambiar configuración');
+                this.checked = !activar;
+                console.error('Error:', error);
+            });
         });
 
         // ==================== PREVIEW DE FOTO ====================
-        document.querySelector('input[name="foto"]')?.addEventListener('change', function (e) {
+        document.getElementById('inputFoto')?.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (file) {
-                // Validar tamaño
-                if (file.size > 2 * 1024 * 1024) {
-                    alert('La imagen no debe superar los 2MB');
-                    this.value = '';
-                    return;
-                }
-
-                // Validar tipo
-                if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
-                    alert('Solo se permiten imágenes JPG o PNG');
-                    this.value = '';
-                    return;
-                }
-
-                // Mostrar preview
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    document.getElementById('previewFoto').src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+            if (!file) return;
+            
+            // Validar tamaño (2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('❌ La imagen no debe superar los 2MB');
+                this.value = '';
+                return;
             }
+            
+            // Validar tipo
+            const tiposPermitidos = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!tiposPermitidos.includes(file.type)) {
+                alert('❌ Solo se permiten imágenes JPG o PNG');
+                this.value = '';
+                return;
+            }
+            
+            // Mostrar preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewFoto').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         });
 
         // ==================== VALIDACIÓN DE CONTRASEÑAS ====================
-        document.querySelector('form[action="/barbero/perfil/cambiar-password"]')?.addEventListener('submit', function (e) {
+        document.querySelector('form[action="/barbero/perfil/cambiar-password"]')?.addEventListener('submit', function(e) {
             const passwordNueva = document.querySelector('input[name="passwordNueva"]').value;
             const passwordConfirmar = document.querySelector('input[name="passwordConfirmar"]').value;
-
+            
             if (passwordNueva !== passwordConfirmar) {
                 e.preventDefault();
-                alert('Las contraseñas no coinciden');
+                alert('❌ Las contraseñas no coinciden');
                 return false;
             }
-
+            
             if (passwordNueva.length < 8) {
                 e.preventDefault();
-                alert('La contraseña debe tener al menos 8 caracteres');
+                alert('❌ La contraseña debe tener al menos 8 caracteres');
                 return false;
             }
         });
 
-        // ==================== FUNCIÓN AUXILIAR PARA MOSTRAR MENSAJES ====================
+        // ==================== FUNCIÓN PARA MOSTRAR MENSAJES ====================
         function mostrarMensaje(tipo, mensaje) {
             const alertClass = tipo === 'success' ? 'alert-success' : 'alert-danger';
             const icon = tipo === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
 
             const alertHtml = `
-        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-            <i class="bi ${icon}"></i> ${mensaje}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `;
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="bi ${icon}"></i> ${mensaje}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
 
-            // Insertar al inicio del container
             const container = document.querySelector('.container.py-5');
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = alertHtml;
             container.insertBefore(tempDiv.firstElementChild, container.firstChild);
 
-            // Auto-ocultar después de 5 segundos
             setTimeout(() => {
                 const alert = container.querySelector('.alert');
                 if (alert) {
-                    alert.classList.remove('show');
-                    setTimeout(() => alert.remove(), 150);
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
                 }
             }, 5000);
         }
 
-        // ==================== AUTO-DESAPARECER MENSAJES ====================
-        document.addEventListener('DOMContentLoaded', function () {
+        // ==================== AUTO-DESAPARECER MENSAJES AL CARGAR ====================
+        document.addEventListener('DOMContentLoaded', function() {
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
                 setTimeout(() => {
-                    alert.classList.remove('show');
-                    setTimeout(() => alert.remove(), 150);
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
                 }, 5000);
             });
         });
     </script>
-
-    <!-- Agregar botón de guardar preferencias en el HTML -->
-    <!-- Busca la sección de Preferencias y actualiza el botón: -->
-    <button id="btnGuardarPreferencias" class="btn btn-primary w-100">
-        <i class="bi bi-save"></i> Guardar Preferencias
-    </button>
-
 </body>
-
 </html>

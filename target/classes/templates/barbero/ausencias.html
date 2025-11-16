@@ -101,28 +101,28 @@
             <div class="col-md-3 mb-3">
                 <div class="stats-box bg-warning bg-opacity-10">
                     <i class="bi bi-hourglass-split fs-2 text-warning"></i>
-                    <h3 class="mt-2 mb-0" th:text="${solicitudesPendientes}">2</h3>
+                    <h3 class="mt-2 mb-0" th:text="${solicitudesPendientes}">0</h3>
                     <small class="text-muted">Pendientes</small>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="stats-box bg-success bg-opacity-10">
                     <i class="bi bi-check-circle fs-2 text-success"></i>
-                    <h3 class="mt-2 mb-0" th:text="${solicitudesAprobadas}">5</h3>
+                    <h3 class="mt-2 mb-0" th:text="${solicitudesAprobadas}">0</h3>
                     <small class="text-muted">Aprobadas</small>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="stats-box bg-danger bg-opacity-10">
                     <i class="bi bi-x-circle fs-2 text-danger"></i>
-                    <h3 class="mt-2 mb-0" th:text="${solicitudesRechazadas}">1</h3>
+                    <h3 class="mt-2 mb-0" th:text="${solicitudesRechazadas}">0</h3>
                     <small class="text-muted">Rechazadas</small>
                 </div>
             </div>
             <div class="col-md-3 mb-3">
                 <div class="stats-box bg-info bg-opacity-10">
                     <i class="bi bi-calendar-event fs-2 text-info"></i>
-                    <h3 class="mt-2 mb-0" th:text="${diasLibresRestantes}">10</h3>
+                    <h3 class="mt-2 mb-0" th:text="${diasLibresRestantes}">15</h3>
                     <small class="text-muted">Días Disponibles</small>
                 </div>
             </div>
@@ -142,22 +142,18 @@
                                 <select class="form-select" name="tipoAusencia" id="tipoAusencia" required>
                                     <option value="">Seleccionar tipo...</option>
                                     <option value="DIA_COMPLETO">Día Completo</option>
-                                    <option value="MEDIO_DIA">Medio Día</option>
                                     <option value="HORAS_ESPECIFICAS">Horas Específicas</option>
-                                    <option value="VACACIONES">Vacaciones</option>
-                                    <option value="ENFERMEDAD">Enfermedad</option>
-                                    <option value="PERSONAL">Motivo Personal</option>
                                 </select>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Fecha de Inicio</label>
-                                <input type="date" class="form-control" name="fechaInicio" required>
+                                <input type="date" class="form-control" name="fechaInicio" id="fechaInicio" required>
                             </div>
 
                             <div class="mb-3" id="fechaFinGroup">
                                 <label class="form-label">Fecha de Fin</label>
-                                <input type="date" class="form-control" name="fechaFin">
+                                <input type="date" class="form-control" name="fechaFin" id="fechaFin">
                                 <small class="text-muted">Opcional para ausencias de un solo día</small>
                             </div>
 
@@ -165,11 +161,11 @@
                                 <div class="row">
                                     <div class="col-6">
                                         <label class="form-label">Hora Inicio</label>
-                                        <input type="time" class="form-control" name="horaInicio">
+                                        <input type="time" class="form-control" name="horaInicio" id="horaInicio">
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label">Hora Fin</label>
-                                        <input type="time" class="form-control" name="horaFin">
+                                        <input type="time" class="form-control" name="horaFin" id="horaFin">
                                     </div>
                                 </div>
                             </div>
@@ -198,194 +194,119 @@
                         <h5 class="mb-0"><i class="bi bi-list-ul"></i> Mis Solicitudes</h5>
                     </div>
                     <div class="card-body">
-                        <!-- Filtros -->
-                        <div class="btn-group mb-3 w-100" role="group">
-                            <input type="radio" class="btn-check" name="filtroEstado" id="filtroTodas" checked>
-                            <label class="btn btn-outline-primary" for="filtroTodas">Todas</label>
-                            
-                            <input type="radio" class="btn-check" name="filtroEstado" id="filtroPendientes">
-                            <label class="btn btn-outline-warning" for="filtroPendientes">Pendientes</label>
-                            
-                            <input type="radio" class="btn-check" name="filtroEstado" id="filtroAprobadas">
-                            <label class="btn btn-outline-success" for="filtroAprobadas">Aprobadas</label>
-                            
-                            <input type="radio" class="btn-check" name="filtroEstado" id="filtroRechazadas">
-                            <label class="btn btn-outline-danger" for="filtroRechazadas">Rechazadas</label>
-                        </div>
-
                         <!-- Solicitudes -->
                         <div class="ausencias-list" style="max-height: 600px; overflow-y: auto;">
-                            <!-- Ejemplo de solicitud pendiente -->
-                            <div class="card ausencia-card pendiente">
+                            <div th:if="${#lists.isEmpty(solicitudes)}" class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> No tienes solicitudes de ausencia.
+                            </div>
+
+                            <div th:each="solicitud : ${solicitudes}" 
+                                 class="card ausencia-card"
+                                 th:classappend="${solicitud.estado.name() == 'PENDIENTE' ? 'pendiente' : (solicitud.estado.name() == 'APROBADA' ? 'aprobada' : 'rechazada')}">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="flex-grow-1">
                                             <div class="d-flex align-items-center mb-2">
-                                                <span class="badge bg-warning me-2">Pendiente</span>
-                                                <strong>Día Completo</strong>
+                                                <span class="badge me-2"
+                                                      th:classappend="${solicitud.estado.name() == 'PENDIENTE' ? 'bg-warning' : (solicitud.estado.name() == 'APROBADA' ? 'bg-success' : 'bg-danger')}"
+                                                      th:text="${solicitud.estado.name() == 'PENDIENTE' ? 'Pendiente' : (solicitud.estado.name() == 'APROBADA' ? 'Aprobada' : 'Rechazada')}">
+                                                    Estado
+                                                </span>
+                                                <strong th:text="${solicitud.tipoAusencia.name().replace('_', ' ')}">Tipo</strong>
                                             </div>
-                                            <p class="mb-2">
-                                                <i class="bi bi-calendar3"></i> 
-                                                <strong>15 de Octubre 2025</strong>
+
+                                            <!-- Fechas según tipo -->
+                                            <p class="mb-2" th:if="${solicitud.tipoAusencia.name() == 'DIA_COMPLETO'}">
+                                                <i class="bi bi-calendar3"></i>
+                                                <span th:if="${solicitud.fechaInicio.equals(solicitud.fechaFin)}">
+                                                    <strong th:text="${#temporals.format(solicitud.fechaInicio, 'dd/MM/yyyy')}">15/10/2025</strong>
+                                                </span>
+                                                <span th:if="${!solicitud.fechaInicio.equals(solicitud.fechaFin)}">
+                                                    Del <strong th:text="${#temporals.format(solicitud.fechaInicio, 'dd/MM/yyyy')}">20/10/2025</strong>
+                                                    al <strong th:text="${#temporals.format(solicitud.fechaFin, 'dd/MM/yyyy')}">25/10/2025</strong>
+                                                </span>
                                             </p>
+
+                                            <p class="mb-2" th:if="${solicitud.tipoAusencia.name() == 'HORAS_ESPECIFICAS'}">
+                                                <i class="bi bi-calendar3"></i>
+                                                <strong th:text="${#temporals.format(solicitud.fecha, 'dd/MM/yyyy')}">10/10/2025</strong>
+                                                <br>
+                                                <i class="bi bi-clock"></i>
+                                                <strong th:text="${#temporals.format(solicitud.horaInicio, 'HH:mm')}">14:00</strong> -
+                                                <strong th:text="${#temporals.format(solicitud.horaFin, 'HH:mm')}">16:00</strong>
+                                            </p>
+
                                             <p class="text-muted mb-2">
-                                                <i class="bi bi-chat-left-text"></i> 
-                                                Cita médica programada
+                                                <i class="bi bi-chat-left-text"></i>
+                                                <span th:text="${solicitud.motivo}">Motivo</span>
                                             </p>
-                                            <small class="text-muted">
-                                                <i class="bi bi-clock"></i> Solicitado el 5 de Oct, 2025
-                                            </small>
+
+                                            <!-- Motivo de rechazo si aplica -->
+                                            <div th:if="${solicitud.estado.name() == 'RECHAZADA'}" class="alert alert-danger mb-2 py-2">
+                                                <small><strong>Motivo rechazo:</strong> <span th:text="${solicitud.motivoRechazo}">Motivo</span></small>
+                                            </div>
+
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-clock"></i>
+                                                    <span th:if="${solicitud.estado.name() == 'PENDIENTE'}">
+                                                        Solicitado el <span th:text="${#temporals.format(solicitud.fechaCreacion, 'dd/MM/yyyy')}">05/10/2025</span>
+                                                    </span>
+                                                    <span th:if="${solicitud.estado.name() == 'APROBADA'}">
+                                                        Aprobado el <span th:text="${#temporals.format(solicitud.fechaRespuesta, 'dd/MM/yyyy')}">10/10/2025</span>
+                                                    </span>
+                                                    <span th:if="${solicitud.estado.name() == 'RECHAZADA'}">
+                                                        Rechazado el <span th:text="${#temporals.format(solicitud.fechaRespuesta, 'dd/MM/yyyy')}">10/10/2025</span>
+                                                    </span>
+                                                </small>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelarModal">
+                                        <div th:if="${solicitud.estado.name() == 'PENDIENTE'}">
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    th:data-bs-target="'#cancelarModal' + ${solicitud.idSolicitud}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Ejemplo de solicitud aprobada -->
-                            <div class="card ausencia-card aprobada">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <span class="badge bg-success me-2">Aprobada</span>
-                                                <strong>Vacaciones</strong>
+                                <!-- Modal Cancelar Solicitud -->
+                                <div class="modal fade" th:id="'cancelarModal' + ${solicitud.idSolicitud}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title"><i class="bi bi-trash"></i> Cancelar Solicitud</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
-                                            <p class="mb-2">
-                                                <i class="bi bi-calendar3"></i> 
-                                                <strong>20 - 25 de Octubre 2025</strong>
-                                            </p>
-                                            <p class="text-muted mb-2">
-                                                <i class="bi bi-chat-left-text"></i> 
-                                                Vacaciones familiares programadas
-                                            </p>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <small class="text-muted">
-                                                    <i class="bi bi-clock"></i> Aprobado el 1 de Oct, 2025
-                                                </small>
-                                                <small class="text-success">
-                                                    <i class="bi bi-person-check"></i> Por: Admin
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Ejemplo de solicitud rechazada -->
-                            <div class="card ausencia-card rechazada">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <span class="badge bg-danger me-2">Rechazada</span>
-                                                <strong>Medio Día</strong>
-                                            </div>
-                                            <p class="mb-2">
-                                                <i class="bi bi-calendar3"></i> 
-                                                <strong>12 de Octubre 2025</strong>
-                                                <span class="text-muted">(8:00 AM - 12:00 PM)</span>
-                                            </p>
-                                            <p class="text-muted mb-2">
-                                                <i class="bi bi-chat-left-text"></i> 
-                                                Asunto personal
-                                            </p>
-                                            <div class="alert alert-danger mb-2 py-2">
-                                                <small><strong>Motivo rechazo:</strong> Ya hay otro barbero ausente ese día</small>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <small class="text-muted">
-                                                    <i class="bi bi-clock"></i> Rechazado el 4 de Oct, 2025
-                                                </small>
-                                                <small class="text-danger">
-                                                    <i class="bi bi-person-x"></i> Por: Admin
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Ejemplo con horas específicas -->
-                            <div class="card ausencia-card aprobada">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <span class="badge bg-success me-2">Aprobada</span>
-                                                <strong>Horas Específicas</strong>
-                                            </div>
-                                            <p class="mb-2">
-                                                <i class="bi bi-calendar3"></i> 
-                                                <strong>10 de Octubre 2025</strong>
-                                            </p>
-                                            <p class="mb-2">
-                                                <i class="bi bi-clock"></i> 
-                                                <strong>2:00 PM - 4:00 PM</strong>
-                                            </p>
-                                            <p class="text-muted mb-2">
-                                                <i class="bi bi-chat-left-text"></i> 
-                                                Diligencia bancaria
-                                            </p>
-                                            <small class="text-muted">
-                                                <i class="bi bi-clock"></i> Aprobado el 3 de Oct, 2025
-                                            </small>
+                                            <form th:action="@{/barbero/ausencias/cancelar/{id}(id=${solicitud.idSolicitud})}" method="POST">
+                                                <div class="modal-body">
+                                                    <p>¿Estás seguro de que deseas cancelar esta solicitud de ausencia?</p>
+                                                    <div class="alert alert-warning">
+                                                        <strong>Tipo:</strong> <span th:text="${solicitud.tipoAusencia.name().replace('_', ' ')}">Tipo</span><br>
+                                                        <strong>Fecha:</strong> 
+                                                        <span th:if="${solicitud.tipoAusencia.name() == 'DIA_COMPLETO'}">
+                                                            <span th:text="${#temporals.format(solicitud.fechaInicio, 'dd/MM/yyyy')}">15/10/2025</span>
+                                                        </span>
+                                                        <span th:if="${solicitud.tipoAusencia.name() == 'HORAS_ESPECIFICAS'}">
+                                                            <span th:text="${#temporals.format(solicitud.fecha, 'dd/MM/yyyy')}">15/10/2025</span>
+                                                        </span>
+                                                        <br>
+                                                        <strong>Estado:</strong> Pendiente
+                                                    </div>
+                                                    <p class="text-muted">Esta acción no se puede deshacer.</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, mantener</button>
+                                                    <button type="submit" class="btn btn-danger">Sí, cancelar solicitud</button>
+                                                </div>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Calendario de ausencias -->
-                <div class="card mt-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Calendario de Ausencias</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> Vista de tus ausencias aprobadas en el calendario
-                        </div>
-                        <ul class="list-group">
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-calendar-check text-success"></i> 20 - 25 Octubre</span>
-                                <span class="badge bg-success">Vacaciones</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-calendar-check text-success"></i> 10 Octubre (2-4 PM)</span>
-                                <span class="badge bg-info">Horas Específicas</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Cancelar Solicitud -->
-    <div class="modal fade" id="cancelarModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-trash"></i> Cancelar Solicitud</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>¿Estás seguro de que deseas cancelar esta solicitud de ausencia?</p>
-                    <div class="alert alert-warning">
-                        <strong>Fecha:</strong> 15 de Octubre 2025<br>
-                        <strong>Tipo:</strong> Día Completo<br>
-                        <strong>Estado:</strong> Pendiente
-                    </div>
-                    <p class="text-muted">Esta acción no se puede deshacer.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, mantener</button>
-                    <button type="button" class="btn btn-danger">Sí, cancelar solicitud</button>
                 </div>
             </div>
         </div>
@@ -403,20 +324,27 @@
         // Mostrar/ocultar campos según tipo de ausencia
         document.getElementById('tipoAusencia').addEventListener('change', function() {
             const horasGroup = document.getElementById('horasGroup');
+            const fechaFinGroup = document.getElementById('fechaFinGroup');
+            const horaInicio = document.getElementById('horaInicio');
+            const horaFin = document.getElementById('horaFin');
+            
             if (this.value === 'HORAS_ESPECIFICAS') {
                 horasGroup.style.display = 'block';
+                fechaFinGroup.style.display = 'none';
+                horaInicio.required = true;
+                horaFin.required = true;
             } else {
                 horasGroup.style.display = 'none';
+                fechaFinGroup.style.display = 'block';
+                horaInicio.required = false;
+                horaFin.required = false;
             }
         });
 
-        // Filtros de solicitudes
-        document.querySelectorAll('input[name="filtroEstado"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                console.log('Filtrar por:', this.id);
-                // Aquí se implementaría el filtrado de las solicitudes
-            });
-        });
+        // Establecer fecha mínima como hoy
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaInicio').min = hoy;
+        document.getElementById('fechaFin').min = hoy;
     </script>
 </body>
 </html>
