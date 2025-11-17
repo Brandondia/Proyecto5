@@ -6,65 +6,154 @@
     <title>Reportes Semanales - Barbería</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         @media print {
-            .no-print {
-                display: none !important;
-            }
-            body {
-                background: white;
-            }
+            .no-print { display: none !important; }
+            body { background: white; }
+            .card { break-inside: avoid; }
         }
+        
         .stats-card {
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
         }
+        
         .stats-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
         }
+        
+        .stats-card .card-body {
+            position: relative;
+            z-index: 1;
+        }
+        
         .stats-icon {
             font-size: 2.5rem;
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            margin-right: 15px;
+            margin-right: 20px;
+            position: relative;
+        }
+        
+        .stats-icon::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.1;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.1; }
+            50% { transform: scale(1.1); opacity: 0.2; }
+        }
+        
+        .progress-custom {
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .metric-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .badge-custom {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .table-custom {
+            font-size: 0.9rem;
+        }
+        
+        .table-custom thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .table-custom tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+            transform: scale(1.01);
+            transition: all 0.2s;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+        }
+        
+        .trend-up {
+            color: #28a745;
+            font-size: 0.9rem;
+        }
+        
+        .trend-down {
+            color: #dc3545;
+            font-size: 0.9rem;
+        }
+        
+        .section-title {
+            position: relative;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
         }
     </style>
 </head>
-<body>
+<body class="bg-light">
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark no-print">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark no-print shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="/admin/panel">Panel de Administración</a>
+            <a class="navbar-brand fw-bold" href="/admin/panel">
+                <i class="bi bi-bar-chart-line me-2"></i>Panel de Administración
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/panel">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/barberos">Barberos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/cortes">Servicios</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/turnos">Turnos</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/reservas">Reservas</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/admin/reportes">Reportes</a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/panel">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/barberos">Barberos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/cortes">Servicios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/turnos">Turnos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/admin/reservas">Reservas</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/admin/reportes">Reportes</a></li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> Admin
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -79,143 +168,208 @@
     </nav>
 
     <div class="container py-5">
-        <!-- Título -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h1>Reportes Semanales</h1>
-                <p class="text-muted">Análisis de rendimiento y estadísticas</p>
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h1 class="display-5 fw-bold mb-2">
+                    <i class="bi bi-graph-up text-primary"></i> Reportes Semanales
+                </h1>
+                <p class="text-muted fs-5">Análisis completo de rendimiento y estadísticas</p>
             </div>
-            <div class="no-print">
-                <button onclick="window.print()" class="btn btn-primary">
+            <div class="col-md-4 text-end no-print">
+                <button onclick="window.print()" class="btn btn-primary btn-lg shadow-sm">
                     <i class="bi bi-printer me-2"></i>Imprimir Reporte
+                </button>
+                <button onclick="exportToExcel()" class="btn btn-success btn-lg shadow-sm ms-2">
+                    <i class="bi bi-file-earmark-excel me-2"></i>Exportar
                 </button>
             </div>
         </div>
         
-        <!-- Periodo -->
-        <div class="alert alert-info mb-4">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-calendar-week fs-2 me-3"></i>
-                <div>
-                    <strong>Período de Análisis:</strong><br>
-                    Semana del <strong th:text="${#temporals.format(inicioSemana, 'dd/MM/yyyy')}">01/01/2025</strong> 
-                    al <strong th:text="${#temporals.format(finSemana, 'dd/MM/yyyy')}">07/01/2025</strong>
+        <!-- Periodo destacado -->
+        <div class="summary-card mb-4 shadow">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h4 class="mb-2">
+                        <i class="bi bi-calendar-week me-2"></i>Período de Análisis
+                    </h4>
+                    <p class="mb-0 fs-5">
+                        <strong>Semana del <span th:text="${#temporals.format(inicioSemana, 'dd/MM/yyyy')}">01/01/2025</span></strong> 
+                        al 
+                        <strong><span th:text="${#temporals.format(finSemana, 'dd/MM/yyyy')}">07/01/2025</span></strong>
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="display-6">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Estadísticas Principales -->
+        <h3 class="section-title">Resumen Ejecutivo</h3>
         <div class="row mb-4">
-            <div class="col-md-3 mb-3">
+            <div class="col-md-3 col-sm-6 mb-3">
                 <div class="card stats-card h-100">
                     <div class="card-body d-flex align-items-center">
-                        <div class="stats-icon bg-primary text-white">
+                        <div class="stats-icon text-primary">
                             <i class="bi bi-calendar-event"></i>
                         </div>
-                        <div>
-                            <h6 class="card-subtitle mb-1 text-muted">Total Reservas</h6>
-                            <h3 class="card-title mb-0" th:text="${totalReservas}">0</h3>
+                        <div class="flex-grow-1">
+                            <p class="metric-label text-muted mb-1">Total Reservas</p>
+                            <h2 class="mb-0 fw-bold" th:text="${totalReservas}">0</h2>
+                            <small class="text-muted">Esta semana</small>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            
+            <div class="col-md-3 col-sm-6 mb-3">
                 <div class="card stats-card h-100">
                     <div class="card-body d-flex align-items-center">
-                        <div class="stats-icon bg-success text-white">
-                            <i class="bi bi-check-circle"></i>
+                        <div class="stats-icon text-success">
+                            <i class="bi bi-check-circle-fill"></i>
                         </div>
-                        <div>
-                            <h6 class="card-subtitle mb-1 text-muted">Completados</h6>
-                            <h3 class="card-title mb-0" th:text="${reservasCompletadas}">0</h3>
+                        <div class="flex-grow-1">
+                            <p class="metric-label text-muted mb-1">Completados</p>
+                            <h2 class="mb-0 fw-bold" th:text="${reservasCompletadas}">0</h2>
+                            <div class="progress progress-custom mt-2">
+                                <div class="progress-bar bg-success" 
+                                     th:style="'width: ' + (${totalReservas > 0 ? (reservasCompletadas * 100.0 / totalReservas) : 0}) + '%'">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            
+            <div class="col-md-3 col-sm-6 mb-3">
                 <div class="card stats-card h-100">
                     <div class="card-body d-flex align-items-center">
-                        <div class="stats-icon bg-warning text-white">
+                        <div class="stats-icon text-warning">
                             <i class="bi bi-cash-stack"></i>
                         </div>
-                        <div>
-                            <h6 class="card-subtitle mb-1 text-muted">Ingresos Totales</h6>
-                            <h3 class="card-title mb-0">
+                        <div class="flex-grow-1">
+                            <p class="metric-label text-muted mb-1">Ingresos Totales</p>
+                            <h2 class="mb-0 fw-bold text-success">
                                 $<span th:text="${#numbers.formatDecimal(ingresoTotal, 1, 2)}">0.00</span>
-                            </h3>
+                            </h2>
+                            <small class="text-muted">Servicios completados</small>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            
+            <div class="col-md-3 col-sm-6 mb-3">
                 <div class="card stats-card h-100">
                     <div class="card-body d-flex align-items-center">
-                        <div class="stats-icon bg-info text-white">
+                        <div class="stats-icon text-info">
                             <i class="bi bi-clock-history"></i>
                         </div>
-                        <div>
-                            <h6 class="card-subtitle mb-1 text-muted">Tiempo Total</h6>
-                            <h3 class="card-title mb-0">
+                        <div class="flex-grow-1">
+                            <p class="metric-label text-muted mb-1">Tiempo Total</p>
+                            <h2 class="mb-0 fw-bold">
                                 <span th:text="${tiempoHoras}">0</span>h 
                                 <span th:text="${tiempoMinutos}">0</span>m
-                            </h3>
+                            </h2>
+                            <small class="text-muted">De servicio</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Indicadores Adicionales -->
+        <!-- KPIs y Métricas -->
+        <h3 class="section-title">Indicadores Clave de Rendimiento (KPIs)</h3>
         <div class="row mb-4">
-            <div class="col-md-4 mb-3">
-                <div class="card stats-card">
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stats-card text-center">
                     <div class="card-body">
-                        <h6 class="text-muted mb-2">
-                            <i class="bi bi-percent me-1"></i>Tasa de Completitud
-                        </h6>
-                        <h4 class="mb-0 text-primary">
+                        <i class="bi bi-percent text-primary fs-1 mb-2"></i>
+                        <p class="metric-label text-muted mb-2">Tasa de Completitud</p>
+                        <h3 class="mb-0 text-primary fw-bold">
                             <span th:text="${totalReservas > 0 ? #numbers.formatDecimal((reservasCompletadas * 100.0 / totalReservas), 1, 1) : 0}">0</span>%
-                        </h4>
+                        </h3>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-3">
-                <div class="card stats-card">
+            
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stats-card text-center">
                     <div class="card-body">
-                        <h6 class="text-muted mb-2">
-                            <i class="bi bi-currency-dollar me-1"></i>Ingreso Promedio
-                        </h6>
-                        <h4 class="mb-0 text-success">
+                        <i class="bi bi-currency-dollar text-success fs-1 mb-2"></i>
+                        <p class="metric-label text-muted mb-2">Ticket Promedio</p>
+                        <h3 class="mb-0 text-success fw-bold">
                             $<span th:text="${reservasCompletadas > 0 ? #numbers.formatDecimal((ingresoTotal / reservasCompletadas), 1, 2) : 0}">0.00</span>
-                        </h4>
+                        </h3>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4 mb-3">
-                <div class="card stats-card">
+            
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stats-card text-center">
                     <div class="card-body">
-                        <h6 class="text-muted mb-2">
-                            <i class="bi bi-hourglass-split me-1"></i>Reservas Pendientes
-                        </h6>
-                        <h4 class="mb-0 text-warning" th:text="${totalReservas - reservasCompletadas}">0</h4>
+                        <i class="bi bi-hourglass-split text-warning fs-1 mb-2"></i>
+                        <p class="metric-label text-muted mb-2">Pendientes</p>
+                        <h3 class="mb-0 text-warning fw-bold" th:text="${totalReservas - reservasCompletadas}">0</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-people text-info fs-1 mb-2"></i>
+                        <p class="metric-label text-muted mb-2">Clientes Atendidos</p>
+                        <h3 class="mb-0 fw-bold" th:text="${reservasCompletadas}">0</h3>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Tabla de Reservas Detallada -->
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-table me-2"></i>Detalle de Reservas de la Semana
-                </h5>
+        <!-- Gráficos -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card stats-card">
+                    <div class="card-header bg-white border-0 pt-4">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-graph-up text-primary me-2"></i>Reservas por Día
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="chartReservasPorDia"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
+            
+            <div class="col-md-6 mb-3">
+                <div class="card stats-card">
+                    <div class="card-header bg-white border-0 pt-4">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-pie-chart text-success me-2"></i>Estado de Reservas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="chartEstados"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla Detallada -->
+        <h3 class="section-title">Detalle de Reservas</h3>
+        <div class="card stats-card shadow-sm">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="table-light">
+                    <table class="table table-custom table-hover mb-0">
+                        <thead>
                             <tr>
-                                <th class="text-center">#</th>
+                                <th class="text-center" width="60">#</th>
                                 <th>Cliente</th>
                                 <th>Barbero</th>
                                 <th>Servicio</th>
@@ -225,25 +379,35 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="reserva : ${reservas}">
-                                <td class="text-center" th:text="${reserva.idReserva}">1</td>
+                            <tr th:each="reserva, iterStat : ${reservas}">
+                                <td class="text-center fw-bold" th:text="${iterStat.count}">1</td>
                                 <td>
-                                    <i class="bi bi-person-circle text-primary me-1"></i>
-                                    <span th:text="${reserva.cliente.nombre}">Cliente</span>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                             style="width: 35px; height: 35px;">
+                                            <span th:text="${#strings.substring(reserva.cliente.nombre, 0, 1)}">C</span>
+                                        </div>
+                                        <div>
+                                            <strong th:text="${reserva.cliente.nombre}">Cliente</strong>
+                                            <br><small class="text-muted" th:text="${reserva.cliente.correo}">email</small>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <i class="bi bi-scissors text-success me-1"></i>
-                                    <span th:text="${reserva.barbero.nombre}">Barbero</span>
+                                    <span th:text="${reserva.barbero.nombreCompleto}">Barbero</span>
                                 </td>
-                                <td th:text="${reserva.corte.nombre}">Corte</td>
                                 <td>
-                                    <small>
-                                        <i class="bi bi-calendar3 me-1"></i>
+                                    <span class="badge badge-custom bg-light text-dark" th:text="${reserva.corte.nombre}">Corte</span>
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        <i class="bi bi-calendar3 me-1 text-primary"></i>
                                         <span th:text="${#temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy')}"></span>
                                         <br>
-                                        <i class="bi bi-clock me-1"></i>
+                                        <i class="bi bi-clock me-1 text-success"></i>
                                         <span th:text="${#temporals.format(reserva.fechaHoraTurno, 'HH:mm')}"></span>
-                                    </small>
+                                    </div>
                                 </td>
                                 <td class="text-center">
                                     <span class="badge" 
@@ -251,22 +415,29 @@
                                                          (${reserva.estado.name() == 'PENDIENTE'} ? 'bg-warning text-dark' : 'bg-danger')"
                                           th:text="${reserva.estado}">Estado</span>
                                 </td>
-                                <td class="text-end fw-bold">
-                                    $<span th:text="${#numbers.formatDecimal(reserva.corte.precio, 1, 2)}">0.00</span>
+                                <td class="text-end">
+                                    <strong class="text-success fs-6">
+                                        $<span th:text="${#numbers.formatDecimal(reserva.corte.precio, 1, 2)}">0.00</span>
+                                    </strong>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(reservas)}">
                                 <td colspan="7" class="text-center text-muted py-5">
-                                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                                    No hay reservas registradas para esta semana
+                                    <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary"></i>
+                                    <h5>No hay reservas registradas para esta semana</h5>
+                                    <p>Los datos aparecerán aquí cuando se registren reservas</p>
                                 </td>
                             </tr>
                         </tbody>
                         <tfoot th:if="${!#lists.isEmpty(reservas)}" class="table-light">
-                            <tr class="fw-bold">
-                                <td colspan="6" class="text-end">TOTAL INGRESOS:</td>
-                                <td class="text-end text-success fs-5">
-                                    $<span th:text="${#numbers.formatDecimal(ingresoTotal, 1, 2)}">0.00</span>
+                            <tr class="fw-bold fs-5">
+                                <td colspan="6" class="text-end py-3">
+                                    <i class="bi bi-cash-stack text-success me-2"></i>TOTAL INGRESOS:
+                                </td>
+                                <td class="text-end py-3">
+                                    <span class="text-success">
+                                        $<span th:text="${#numbers.formatDecimal(ingresoTotal, 1, 2)}">0.00</span>
+                                    </span>
                                 </td>
                             </tr>
                         </tfoot>
@@ -275,30 +446,160 @@
             </div>
         </div>
 
-        <!-- Información adicional para impresión -->
-        <div class="mt-4 text-muted text-center d-none d-print-block">
+        <!-- Información de impresión -->
+        <div class="mt-5 text-center text-muted d-none d-print-block">
             <hr>
-            <small>Reporte generado el <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span></small>
-            <br>
-            <small>Barbería Estilo - Sistema de Gestión</small>
+            <p class="mb-1">
+                <strong>Reporte generado el:</strong> 
+                <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}"></span>
+            </p>
+            <p class="mb-0">Barbería Estilo - Sistema de Gestión Profesional</p>
         </div>
     </div>
 
     <!-- Footer -->
     <footer class="bg-dark text-white py-4 mt-5 no-print">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Barbería Estilo - Panel de Administración</h5>
-                    <p>Sistema de gestión para administradores.</p>
-                </div>
-            </div>
-            <div class="text-center mt-4">
-                <p>&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
-            </div>
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2025 Barbería Estilo. Todos los derechos reservados.</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        // Datos desde el backend
+        const totalReservas = /*[[${totalReservas}]]*/ 0;
+        const reservasCompletadas = /*[[${reservasCompletadas}]]*/ 0;
+        const reservasPendientes = totalReservas - reservasCompletadas;
+        
+        // Procesar reservas por día de la semana
+        const reservasPorDia = [0, 0, 0, 0, 0, 0, 0]; // Lun a Dom
+        const reservas = /*[[${reservas}]]*/ [];
+        
+        reservas.forEach(reserva => {
+            try {
+                const fecha = new Date(reserva.fechaHoraTurno);
+                const diaSemana = fecha.getDay(); // 0=Domingo, 1=Lunes, etc.
+                // Ajustar para que Lunes sea 0
+                const diaAjustado = diaSemana === 0 ? 6 : diaSemana - 1;
+                reservasPorDia[diaAjustado]++;
+            } catch(e) {
+                console.error('Error procesando fecha:', e);
+            }
+        });
+
+        // Gráfico de Reservas por Día
+        const ctxDia = document.getElementById('chartReservasPorDia');
+        if (ctxDia) {
+            new Chart(ctxDia, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                    datasets: [{
+                        label: 'Reservas',
+                        data: reservasPorDia,
+                        borderColor: 'rgb(102, 126, 234)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: 'rgb(102, 126, 234)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Reservas: ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Gráfico de Estados
+        const ctxEstados = document.getElementById('chartEstados');
+        if (ctxEstados && totalReservas > 0) {
+            new Chart(ctxEstados, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completadas', 'Pendientes'],
+                    datasets: [{
+                        data: [reservasCompletadas, reservasPendientes],
+                        backgroundColor: ['#28a745', '#ffc107'],
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + value + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else if (ctxEstados && totalReservas === 0) {
+            // Mostrar mensaje si no hay datos
+            const parent = ctxEstados.parentElement;
+            parent.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-pie-chart fs-1 d-block mb-3"></i><p>No hay datos para mostrar</p></div>';
+        }
+
+        // Función para exportar a Excel (básica)
+        function exportToExcel() {
+            // Crear tabla HTML para exportar
+            const table = document.querySelector('.table-custom');
+            if (!table) {
+                alert('No hay datos para exportar');
+                return;
+            }
+            
+            const html = table.outerHTML;
+            const blob = new Blob(['\ufeff', html], {
+                type: 'application/vnd.ms-excel'
+            });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'reporte_semanal_' + new Date().toISOString().split('T')[0] + '.xls';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
 </body>
 </html>

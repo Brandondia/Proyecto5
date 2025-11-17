@@ -9,44 +9,60 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+/**
+ * Entidad Barbero con soporte para Soft Delete
+ * 
+ * @author Tu Nombre
+ * @version 2.0 - Actualizado con soft delete
+ */
 @Entity
-@Getter @Setter
+@Getter 
+@Setter
+@Table(name = "barbero")
 public class Barbero {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "idBarbero")
     private Long idBarbero;
 
     // ==================== INFORMACIÓN BÁSICA ====================
     
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String nombre;
 
+    @Column(length = 100)
     private String apellido;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 150)
     private String email;
 
+    @Column(length = 20)
     private String telefono;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String password;
 
     // ==================== INFORMACIÓN PERSONAL ====================
     
-    @Column(unique = true)
+    @Column(unique = true, length = 50)
     private String documento;
     
+    @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
     
+    @Column(length = 200)
     private String direccion;
 
     // ==================== INFORMACIÓN PROFESIONAL ====================
     
+    @Column(length = 100)
     private String especialidad;
     
+    @Column(name = "experiencia_anios")
     private Integer experienciaAnios;
     
+    @Column(name = "fecha_ingreso")
     private LocalDate fechaIngreso;
     
     @Column(columnDefinition = "TEXT")
@@ -55,22 +71,33 @@ public class Barbero {
     // ==================== CONFIGURACIÓN DE HORARIO ====================
     
     @Enumerated(EnumType.STRING)
+    @Column(name = "dia_libre", length = 20)
     private DayOfWeek diaLibre;
 
+    @Column(name = "hora_inicio")
     private LocalTime horaInicio;
+    
+    @Column(name = "hora_fin")
     private LocalTime horaFin;
+    
+    @Column(name = "hora_inicio_almuerzo")
     private LocalTime horaInicioAlmuerzo;
+    
+    @Column(name = "hora_fin_almuerzo")
     private LocalTime horaFinAlmuerzo;
     
+    @Column(name = "duracion_turno")
     private Integer duracionTurno; // en minutos
 
     // ==================== PERFIL Y SEGURIDAD ====================
     
+    @Column(name = "foto_perfil", length = 500)
     private String fotoPerfil;
     
+    @Column(name = "ultima_sesion")
     private LocalDateTime ultimaSesion;
     
-    @Column(nullable = false)
+    @Column(name = "autenticacion_dos_pasos", nullable = false)
     private Boolean autenticacionDosPasos = false;
 
     /**
@@ -78,37 +105,68 @@ public class Barbero {
      * CRÍTICO: Este campo es necesario para la autenticación.
      * Por defecto: ROLE_BARBERO
      */
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String rol = "ROLE_BARBERO";
 
     // ==================== PREFERENCIAS DE NOTIFICACIONES ====================
     
-    @Column(nullable = false)
+    @Column(name = "notif_reservas", nullable = false)
     private Boolean notifReservas = true;
     
-    @Column(nullable = false)
+    @Column(name = "notif_cancelaciones", nullable = false)
     private Boolean notifCancelaciones = true;
     
-    @Column(nullable = false)
+    @Column(name = "notif_recordatorios", nullable = false)
     private Boolean notifRecordatorios = true;
 
-    // ==================== ESTADO ====================
+    // ==================== ESTADO Y SOFT DELETE ====================
     
+    /**
+     * Indica si el barbero está activo en el sistema.
+     * true = activo (puede trabajar y recibir reservas)
+     * false = desvinculado (soft delete - no puede trabajar pero mantiene historial)
+     */
     @Column(nullable = false)
     private boolean activo = true;
+    
+    /**
+     * Fecha en la que el barbero fue desvinculado.
+     * NULL = barbero activo
+     * NOT NULL = barbero desvinculado (fecha de desvinculación)
+     */
+    @Column(name = "fecha_desvinculacion")
+    private LocalDateTime fechaDesvinculacion;
+    
+    /**
+     * Motivo por el cual el barbero fue desvinculado.
+     * NULL = barbero activo
+     * NOT NULL = razón de la desvinculación
+     */
+    @Column(name = "motivo_desvinculacion", length = 500)
+    private String motivoDesvinculacion;
 
-    // ==================== CONSTRUCTOR ====================
+    // ==================== CONSTRUCTORES ====================
     
     public Barbero() {
+        // Constructor por defecto requerido por JPA
+    }
+    
+    public Barbero(String nombre, String email, String password) {
+        this.nombre = nombre;
+        this.email = email;
+        this.password = password;
+        this.activo = true;
+        this.rol = "ROLE_BARBERO";
     }
 
     // ==================== MÉTODOS AUXILIARES ====================
     
     /**
      * Obtiene el nombre completo del barbero
+     * @return nombre completo (nombre + apellido) o solo nombre si no tiene apellido
      */
     public String getNombreCompleto() {
-        if (apellido != null && !apellido.isEmpty()) {
+        if (apellido != null && !apellido.trim().isEmpty()) {
             return nombre + " " + apellido;
         }
         return nombre;
@@ -116,13 +174,16 @@ public class Barbero {
     
     /**
      * Verifica si el barbero tiene foto de perfil personalizada
+     * @return true si tiene foto, false si no
      */
     public boolean tieneFotoPerfil() {
-        return fotoPerfil != null && !fotoPerfil.isEmpty();
+        return fotoPerfil != null && !fotoPerfil.trim().isEmpty();
     }
     
     /**
-     * Verifica si el barbero está disponible en un día específico
+     * Verifica si el barbero está disponible en un día específico de la semana
+     * @param dia día de la semana a verificar
+     * @return true si está disponible, false si es su día libre o está inactivo
      */
     public boolean estaDisponibleEnDia(DayOfWeek dia) {
         return activo && !dia.equals(diaLibre);
@@ -130,8 +191,87 @@ public class Barbero {
     
     /**
      * Verifica si tiene configuración de horario completa
+     * Necesario para poder generar turnos automáticamente
+     * @return true si tiene todos los datos de horario, false si falta alguno
      */
     public boolean tieneHorarioCompleto() {
-        return horaInicio != null && horaFin != null && duracionTurno != null;
+        return horaInicio != null && horaFin != null && duracionTurno != null && duracionTurno > 0;
+    }
+    
+    // ==================== MÉTODOS PARA SOFT DELETE ====================
+    
+    /**
+     * Desvincula al barbero de la barbería (soft delete)
+     * Marca el barbero como inactivo pero mantiene todos sus datos
+     * 
+     * @param motivo Razón de la desvinculación (obligatorio para auditoría)
+     */
+    public void desvincular(String motivo) {
+        this.activo = false;
+        this.fechaDesvinculacion = LocalDateTime.now();
+        this.motivoDesvinculacion = motivo != null && !motivo.trim().isEmpty() 
+            ? motivo 
+            : "Desvinculado por el administrador";
+    }
+    
+    /**
+     * Reactiva al barbero en la barbería
+     * Vuelve a activar al barbero y limpia los datos de desvinculación
+     */
+    public void reactivar() {
+        this.activo = true;
+        this.fechaDesvinculacion = null;
+        this.motivoDesvinculacion = null;
+    }
+    
+    /**
+     * Verifica si el barbero está desvinculado
+     * @return true si está desvinculado, false si está activo
+     */
+    public boolean estaDesvinculado() {
+        return !activo;
+    }
+    
+    /**
+     * Obtiene una descripción del estado actual del barbero
+     * @return descripción del estado (Activo/Desvinculado desde...)
+     */
+    public String getEstadoDescripcion() {
+        if (activo) {
+            return "Activo";
+        } else {
+            if (fechaDesvinculacion != null) {
+                return "Desvinculado desde " + fechaDesvinculacion.toLocalDate();
+            }
+            return "Desvinculado";
+        }
+    }
+
+    // ==================== EQUALS & HASHCODE ====================
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Barbero)) return false;
+        Barbero barbero = (Barbero) o;
+        return idBarbero != null && idBarbero.equals(barbero.idBarbero);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    // ==================== TO STRING ====================
+    
+    @Override
+    public String toString() {
+        return "Barbero{" +
+                "id=" + idBarbero +
+                ", nombre='" + getNombreCompleto() + '\'' +
+                ", email='" + email + '\'' +
+                ", activo=" + activo +
+                ", especialidad='" + especialidad + '\'' +
+                '}';
     }
 }

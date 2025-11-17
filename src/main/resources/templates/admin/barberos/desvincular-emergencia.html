@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desvinculación de Emergencia - Barbería</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .emergency-header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        .option-card {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .option-card:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .option-card.selected {
+            border-color: #0d6efd;
+            background: #e7f1ff;
+        }
+        .option-card input[type="radio"] {
+            width: 20px;
+            height: 20px;
+        }
+        .stats-box {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .reserva-item {
+            border-left: 3px solid #ffc107;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: #fff;
+            border-radius: 5px;
+        }
+        .hidden-section {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/admin/panel">Panel de Administración</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/admin/barberos">← Volver a Barberos</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <!-- Header de Emergencia -->
+        <div class="emergency-header text-center">
+            <i class="bi bi-exclamation-triangle-fill" style="font-size: 3rem;"></i>
+            <h1 class="mt-3">Desvinculación de Emergencia</h1>
+            <p class="mb-0">
+                Barbero: <strong th:text="${barbero.nombreCompleto}">Nombre Barbero</strong>
+            </p>
+        </div>
+
+        <!-- Alerta -->
+        <div class="alert alert-danger">
+            <h5 class="alert-heading">
+                <i class="bi bi-exclamation-octagon-fill"></i> Procedimiento de Emergencia
+            </h5>
+            <p class="mb-0">
+                Este proceso desvinculará inmediatamente al barbero, incluso si tiene reservas activas. 
+                Debes decidir qué hacer con sus reservas existentes.
+            </p>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stats-box text-center">
+                    <i class="bi bi-calendar-check text-primary" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2 mb-0" th:text="${reservasActivas}">0</h3>
+                    <small class="text-muted">Reservas Activas</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-box text-center">
+                    <i class="bi bi-calendar-day text-warning" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2 mb-0" th:text="${reservasHoy}">0</h3>
+                    <small class="text-muted">Reservas Hoy</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-box text-center">
+                    <i class="bi bi-calendar-week text-info" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2 mb-0" th:text="${reservasEstaSemana}">0</h3>
+                    <small class="text-muted">Esta Semana</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <form th:action="@{/admin/barberos/desvincular-emergencia/{id}(id=${barbero.idBarbero})}" 
+              method="post" id="formEmergencia">
+            
+            <!-- Motivo -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Motivo de Desvinculación</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Especifica el motivo (requerido) *</label>
+                        <textarea class="form-control" name="motivo" rows="3" 
+                                  placeholder="Ej: Despido por incumplimiento, renuncia inmediata, problemas disciplinarios..."
+                                  required></textarea>
+                        <small class="text-muted">Este motivo quedará registrado para auditoría</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Opciones para Reservas -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear"></i> ¿Qué hacer con las 
+                        <strong th:text="${reservasActivas}">0</strong> reservas activas?
+                    </h5>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Opción 1: Cancelar -->
+                    <div class="option-card" onclick="selectOption('cancelar')">
+                        <div class="d-flex align-items-start">
+                            <input type="radio" name="accionReservas" value="cancelar" 
+                                   id="opcionCancelar" class="me-3 mt-1">
+                            <div class="flex-grow-1">
+                                <label for="opcionCancelar" class="form-check-label w-100" style="cursor: pointer;">
+                                    <h5><i class="bi bi-x-circle text-danger"></i> Cancelar Todas las Reservas</h5>
+                                    <p class="mb-0 text-muted">
+                                        Las reservas serán canceladas y los clientes recibirán un email 
+                                        notificándoles para que agenden con otro barbero.
+                                    </p>
+                                    <div class="mt-2">
+                                        <span class="badge bg-danger">Clientes notificados por email</span>
+                                        <span class="badge bg-secondary">Más rápido</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Opción 2: Reasignar -->
+                    <div class="option-card" onclick="selectOption('reasignar')">
+                        <div class="d-flex align-items-start">
+                            <input type="radio" name="accionReservas" value="reasignar" 
+                                   id="opcionReasignar" class="me-3 mt-1">
+                            <div class="flex-grow-1">
+                                <label for="opcionReasignar" class="form-check-label w-100" style="cursor: pointer;">
+                                    <h5><i class="bi bi-arrow-left-right text-primary"></i> Reasignar a Otro Barbero</h5>
+                                    <p class="mb-0 text-muted">
+                                        Las reservas se transferirán automáticamente a otro barbero. 
+                                        Los clientes recibirán un email informándoles del cambio.
+                                    </p>
+                                    <div class="mt-2">
+                                        <span class="badge bg-primary">Clientes notificados por email</span>
+                                        <span class="badge bg-success">Mejor para clientes</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección de reasignación -->
+                    <div id="seccionReasignar" class="hidden-section ms-5 mt-3 p-3 border rounded bg-light">
+                        <label class="form-label">Selecciona el barbero sustituto *</label>
+                        <select class="form-select" name="barberoSustitutoId" id="barberoSustituto">
+                            <option value="">-- Seleccionar barbero --</option>
+                            <option th:each="b : ${barberosDisponibles}" 
+                                    th:value="${b.idBarbero}"
+                                    th:text="${b.nombreCompleto + ' - ' + (b.especialidad != null ? b.especialidad : 'Sin especialidad')}">
+                            </option>
+                        </select>
+                        <small class="text-muted">Solo barberos activos y disponibles</small>
+                    </div>
+
+                    <!-- Opción 3: Mantener -->
+                    <div class="option-card" onclick="selectOption('mantener')">
+                        <div class="d-flex align-items-start">
+                            <input type="radio" name="accionReservas" value="mantener" 
+                                   id="opcionMantener" class="me-3 mt-1">
+                            <div class="flex-grow-1">
+                                <label for="opcionMantener" class="form-check-label w-100" style="cursor: pointer;">
+                                    <h5><i class="bi bi-pause-circle text-warning"></i> Mantener Reservas (No Recomendado)</h5>
+                                    <p class="mb-0 text-muted">
+                                        Las reservas quedarán activas pero asignadas a un barbero desvinculado. 
+                                        Deberás gestionarlas manualmente después.
+                                    </p>
+                                    <div class="mt-2">
+                                        <span class="badge bg-warning text-dark">Requiere gestión manual</span>
+                                        <span class="badge bg-danger">No recomendado</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensaje Personalizado -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Mensaje para Clientes (Opcional)</h5>
+                </div>
+                <div class="card-body">
+                    <textarea class="form-control" name="mensajeClientes" rows="3" 
+                              placeholder="Mensaje personalizado que se enviará por email (opcional)"></textarea>
+                    <small class="text-muted">Si no escribes nada, se enviará un mensaje estándar</small>
+                </div>
+            </div>
+
+            <!-- Lista de Reservas -->
+            <div class="card mb-4" th:if="${reservasActivas > 0}">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-check"></i> Reservas Afectadas 
+                        (<span th:text="${reservasActivas}">0</span>)
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    <div th:each="reserva : ${reservasFuturas}" class="reserva-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong th:text="${reserva.cliente.nombre}">Cliente</strong>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar"></i> 
+                                    <span th:text="${#temporals.format(reserva.fechaHoraTurno, 'dd/MM/yyyy HH:mm')}">Fecha</span>
+                                    <span th:if="${reserva.corte != null}">
+                                        | <i class="bi bi-scissors"></i> 
+                                        <span th:text="${reserva.corte.nombre}">Servicio</span>
+                                    </span>
+                                </small>
+                            </div>
+                            <span class="badge bg-warning">Pendiente</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmación -->
+            <div class="card border-danger mb-4">
+                <div class="card-body">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="confirmarEmergencia" required>
+                        <label class="form-check-label text-danger" for="confirmarEmergencia">
+                            <strong>
+                                ⚠️ Confirmo que entiendo las consecuencias y deseo proceder con 
+                                la desvinculación inmediata de este barbero
+                            </strong>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="d-flex justify-content-between">
+                <a href="/admin/barberos" class="btn btn-secondary btn-lg">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-danger btn-lg" id="btnProceder" disabled>
+                    <i class="bi bi-exclamation-triangle"></i> Proceder con Desvinculación
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function selectOption(option) {
+            document.querySelectorAll('.option-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            const radio = document.getElementById('opcion' + option.charAt(0).toUpperCase() + option.slice(1));
+            radio.checked = true;
+            event.currentTarget.classList.add('selected');
+            
+            const seccionReasignar = document.getElementById('seccionReasignar');
+            const barberoSustituto = document.getElementById('barberoSustituto');
+            
+            if (option === 'reasignar') {
+                seccionReasignar.classList.remove('hidden-section');
+                barberoSustituto.required = true;
+            } else {
+                seccionReasignar.classList.add('hidden-section');
+                barberoSustituto.required = false;
+                barberoSustituto.value = '';
+            }
+        }
+        
+        document.getElementById('confirmarEmergencia').addEventListener('change', function() {
+            document.getElementById('btnProceder').disabled = !this.checked;
+        });
+        
+        document.getElementById('formEmergencia').addEventListener('submit', function(e) {
+            const accionSeleccionada = document.querySelector('input[name="accionReservas"]:checked');
+            
+            if (!accionSeleccionada) {
+                e.preventDefault();
+                alert('Debes seleccionar qué hacer con las reservas activas');
+                return false;
+            }
+            
+            if (accionSeleccionada.value === 'reasignar') {
+                const barberoSustituto = document.getElementById('barberoSustituto').value;
+                if (!barberoSustituto) {
+                    e.preventDefault();
+                    alert('Debes seleccionar un barbero sustituto');
+                    return false;
+                }
+            }
+            
+            const reservasActivas = parseInt(document.querySelector('[th\\:text="${reservasActivas}"]')?.textContent || '0');
+            
+            return confirm(
+                '¿Estás COMPLETAMENTE seguro?\n\n' +
+                'Esta acción desvinculará inmediatamente al barbero y gestionará ' + reservasActivas + ' reservas.\n\n' +
+                'Los clientes serán notificados por EMAIL.\n\n' +
+                'Presiona OK para confirmar.'
+            );
+        });
+    </script>
+</body>
+</html>

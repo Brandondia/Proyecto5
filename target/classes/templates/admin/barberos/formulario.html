@@ -17,6 +17,22 @@
             content: " *";
             color: red;
         }
+        .password-toggle {
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            top: 38px;
+            z-index: 10;
+        }
+        .password-wrapper {
+            position: relative;
+        }
+        .password-match {
+            border-color: #198754 !important;
+        }
+        .password-mismatch {
+            border-color: #dc3545 !important;
+        }
     </style>
 </head>
 <body>
@@ -56,7 +72,7 @@
 
         <!-- Alertas -->
         <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill"></i> <span th:text="${mensaje}"></span>
+            <i class="bi bi-check-circle-fill"></i> <span th:utext="${mensaje}"></span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         
@@ -67,7 +83,7 @@
         
         <div class="card">
             <div class="card-body">
-                <form th:action="@{/admin/barberos/guardar}" th:object="${barbero}" method="post">
+                <form th:action="@{/admin/barberos/guardar}" th:object="${barbero}" method="post" id="formBarbero">
                     <input type="hidden" th:field="*{idBarbero}" />
                     
                     <!-- ==================== INFORMACIÓN BÁSICA ==================== -->
@@ -110,14 +126,20 @@
                         </div>
                     </div>
 
+                    <!-- ==================== CONTRASEÑAS CON VALIDACIÓN ==================== -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="password" class="form-label" th:classappend="${barbero.idBarbero == null ? 'required-field' : ''}">
                                 Contraseña
                             </label>
-                            <input type="password" class="form-control" id="password" th:field="*{password}" 
-                                   placeholder="Mínimo 6 caracteres"
-                                   th:required="${barbero.idBarbero == null}">
+                            <div class="password-wrapper">
+                                <input type="password" class="form-control" id="password" 
+                                       th:field="*{password}" 
+                                       placeholder="Mínimo 6 caracteres"
+                                       th:required="${barbero.idBarbero == null}"
+                                       minlength="6">
+                                <i class="bi bi-eye-slash password-toggle" id="togglePassword"></i>
+                            </div>
                             <div class="form-text">
                                 <span th:if="${barbero.idBarbero == null}">
                                     <i class="bi bi-key"></i> Requerido para nuevos barberos (mínimo 6 caracteres)
@@ -128,9 +150,27 @@
                             </div>
                         </div>
                         <div class="col-md-6">
+                            <label for="confirmarPassword" class="form-label" th:classappend="${barbero.idBarbero == null ? 'required-field' : ''}">
+                                Confirmar Contraseña
+                            </label>
+                            <div class="password-wrapper">
+                                <input type="password" class="form-control" id="confirmarPassword" 
+                                       name="confirmarPassword"
+                                       placeholder="Repetir contraseña"
+                                       th:required="${barbero.idBarbero == null}"
+                                       minlength="6">
+                                <i class="bi bi-eye-slash password-toggle" id="toggleConfirmPassword"></i>
+                            </div>
+                            <div id="passwordMatch" class="form-text"></div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
                             <label for="documento" class="form-label">Documento de Identidad</label>
                             <input type="text" class="form-control" id="documento" th:field="*{documento}" 
                                    placeholder="Cédula o DNI">
+                            <small class="text-muted">Debe ser único (si se proporciona)</small>
                         </div>
                     </div>
 
@@ -277,7 +317,7 @@
                         <a href="/admin/barberos" class="btn btn-secondary">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="btnGuardar">
                             <i class="bi bi-save"></i> 
                             <span th:text="${barbero.idBarbero == null ? 'Crear Barbero' : 'Actualizar Barbero'}">Guardar</span>
                         </button>
@@ -291,6 +331,7 @@
                             <li>El barbero podrá iniciar sesión con el <strong>email</strong> y <strong>contraseña</strong> proporcionados</li>
                             <li>Tendrá acceso al panel de barbero en <code>/barbero/panel</code></li>
                             <li>Los campos marcados con <span class="text-danger">*</span> son obligatorios</li>
+                            <li><strong>Las contraseñas deben coincidir</strong> para poder crear la cuenta</li>
                         </ul>
                     </div>
                 </form>
@@ -314,5 +355,78 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script para toggle de contraseñas y validación -->
+    <script>
+        // Toggle para ver/ocultar contraseña principal
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+        
+        togglePassword.addEventListener('click', function () {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            this.classList.toggle('bi-eye');
+            this.classList.toggle('bi-eye-slash');
+        });
+        
+        // Toggle para ver/ocultar confirmación de contraseña
+        const toggleConfirmPassword = document.querySelector('#toggleConfirmPassword');
+        const confirmPassword = document.querySelector('#confirmarPassword');
+        
+        toggleConfirmPassword.addEventListener('click', function () {
+            const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+            confirmPassword.setAttribute('type', type);
+            this.classList.toggle('bi-eye');
+            this.classList.toggle('bi-eye-slash');
+        });
+        
+        // Validar que las contraseñas coincidan en tiempo real
+        const passwordMatch = document.querySelector('#passwordMatch');
+        const btnGuardar = document.querySelector('#btnGuardar');
+        
+        function validarContraseñas() {
+            const pass = password.value;
+            const confirmPass = confirmPassword.value;
+            
+            // Si ambos campos están vacíos (edición sin cambiar contraseña)
+            if (pass === '' && confirmPass === '') {
+                confirmPassword.classList.remove('password-match', 'password-mismatch');
+                passwordMatch.innerHTML = '';
+                btnGuardar.disabled = false;
+                return;
+            }
+            
+            // Si alguno tiene valor, validar
+            if (pass !== '' || confirmPass !== '') {
+                if (pass === confirmPass && pass.length >= 6) {
+                    confirmPassword.classList.remove('password-mismatch');
+                    confirmPassword.classList.add('password-match');
+                    passwordMatch.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i> Las contraseñas coinciden';
+                    passwordMatch.className = 'form-text text-success';
+                    btnGuardar.disabled = false;
+                } else if (pass === confirmPass && pass.length < 6) {
+                    confirmPassword.classList.remove('password-match');
+                    confirmPassword.classList.add('password-mismatch');
+                    passwordMatch.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-warning"></i> La contraseña debe tener al menos 6 caracteres';
+                    passwordMatch.className = 'form-text text-warning';
+                    btnGuardar.disabled = true;
+                } else {
+                    confirmPassword.classList.remove('password-match');
+                    confirmPassword.classList.add('password-mismatch');
+                    passwordMatch.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i> Las contraseñas no coinciden';
+                    passwordMatch.className = 'form-text text-danger';
+                    btnGuardar.disabled = true;
+                }
+            }
+        }
+        
+        password.addEventListener('input', validarContraseñas);
+        confirmPassword.addEventListener('input', validarContraseñas);
+        
+        // Validación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            validarContraseñas();
+        });
+    </script>
 </body>
 </html>

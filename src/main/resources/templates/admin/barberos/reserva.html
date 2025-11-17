@@ -207,11 +207,10 @@
                                                 <span th:text="${#temporals.format(reserva.fechaHora, 'HH:mm')}"></span>
                                             </p>
                                         </div>
-                                        <span th:class="'badge estado-badge bg-' + 
-                                                       ${reserva.estado == T(com.barberia.model.EstadoReserva).CONFIRMADA ? 'success' : 
-                                                         reserva.estado == T(com.barberia.model.EstadoReserva).CANCELADA ? 'danger' : 
-                                                         reserva.estado == T(com.barberia.model.EstadoReserva).COMPLETADA ? 'secondary' : 'warning'}" 
-                                              th:text="${reserva.estado}">
+                                                                                <span th:class="'badge estado-badge bg-' + 
+                                                                                                             ${reserva.estado.name() == 'COMPLETADA' ? 'success' : 
+                                                                                                                 reserva.estado.name() == 'CANCELADA' ? 'danger' : 'warning'}" 
+                                                                                            th:text="${reserva.estado}">
                                             Estado
                                         </span>
                                     </div>
@@ -235,7 +234,7 @@
                                             <i class="bi bi-eye"></i> Ver
                                         </button>
                                         <button type="button" 
-                                                th:if="${reserva.estado == T(com.barberia.model.EstadoReserva).CONFIRMADA}"
+                                            th:if="${reserva.estado.name() == 'COMPLETADA'}"
                                                 class="btn btn-sm btn-outline-success"
                                                 th:onclick="'completarReserva(' + ${reserva.id} + ')'">
                                             <i class="bi bi-check-circle"></i> Completar
@@ -285,11 +284,10 @@
                                                 <span th:text="${#temporals.format(reserva.fechaHora, 'HH:mm')}"></span>
                                             </p>
                                         </div>
-                                        <span th:class="'badge estado-badge bg-' + 
-                                                       ${reserva.estado == T(com.barberia.model.EstadoReserva).CONFIRMADA ? 'success' : 
-                                                         reserva.estado == T(com.barberia.model.EstadoReserva).CANCELADA ? 'danger' : 
-                                                         reserva.estado == T(com.barberia.model.EstadoReserva).COMPLETADA ? 'secondary' : 'warning'}" 
-                                              th:text="${reserva.estado}">
+                                                                                <span th:class="'badge estado-badge bg-' + 
+                                                                                                             ${reserva.estado.name() == 'COMPLETADA' ? 'success' : 
+                                                                                                                 reserva.estado.name() == 'CANCELADA' ? 'danger' : 'warning'}" 
+                                                                                            th:text="${reserva.estado}">
                                             Estado
                                         </span>
                                     </div>
@@ -355,11 +353,10 @@
                                                 <span th:text="${#temporals.format(reserva.fechaHora, 'HH:mm')}"></span>
                                             </p>
                                         </div>
-                                        <span th:class="'badge estado-badge bg-' + 
-                                                       ${reserva.estado == T(com.barberia.model.EstadoReserva).CONFIRMADA ? 'success' : 
-                                                         reserva.estado == T(com.barberia.model.EstadoReserva).CANCELADA ? 'danger' : 
-                                                         reserva.estado == T(com.barberia.model.EstadoReserva).COMPLETADA ? 'secondary' : 'warning'}" 
-                                              th:text="${reserva.estado}">
+                                                                                <span th:class="'badge estado-badge bg-' + 
+                                                                                                             ${reserva.estado.name() == 'COMPLETADA' ? 'success' : 
+                                                                                                                 reserva.estado.name() == 'CANCELADA' ? 'danger' : 'warning'}" 
+                                                                                            th:text="${reserva.estado}">
                                             Estado
                                         </span>
                                     </div>
@@ -424,11 +421,10 @@
                                                 <span th:text="${#temporals.format(reserva.fechaHora, 'HH:mm')}"></span>
                                             </p>
                                         </div>
-                                        <span th:class="'badge estado-badge bg-' + 
-                                                       ${reserva.estado == T(com.barberia.model.EstadoReserva).CONFIRMADA ? 'success' : 
-                                                         reserva.estado == T(com.barberia.model.EstadoReserva).CANCELADA ? 'danger' : 
-                                                         reserva.estado == T(com.barberia.model.EstadoReserva).COMPLETADA ? 'secondary' : 'warning'}" 
-                                              th:text="${reserva.estado}">
+                                                                                <span th:class="'badge estado-badge bg-' + 
+                                                                                                             ${reserva.estado.name() == 'COMPLETADA' ? 'success' : 
+                                                                                                                 reserva.estado.name() == 'CANCELADA' ? 'danger' : 'warning'}" 
+                                                                                            th:text="${reserva.estado}">
                                             Estado
                                         </span>
                                     </div>

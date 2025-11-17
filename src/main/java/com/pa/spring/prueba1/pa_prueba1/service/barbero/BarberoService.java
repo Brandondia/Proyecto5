@@ -1,11 +1,14 @@
 package com.pa.spring.prueba1.pa_prueba1.service.barbero;
+
 import com.pa.spring.prueba1.pa_prueba1.model.Notificacion;
+import com.pa.spring.prueba1.pa_prueba1.model.Notificacion.TipoNotificacion;
 import com.pa.spring.prueba1.pa_prueba1.model.Reserva;
 import com.pa.spring.prueba1.pa_prueba1.model.SolicitudAusencia;
 import com.pa.spring.prueba1.pa_prueba1.repository.BarberoRepository;
 import com.pa.spring.prueba1.pa_prueba1.repository.NotificacionRepository;
 import com.pa.spring.prueba1.pa_prueba1.repository.ReservaRepository;
 import com.pa.spring.prueba1.pa_prueba1.repository.SolicitudAusenciaRepository;
+import com.pa.spring.prueba1.pa_prueba1.repository.TurnoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,8 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.pa.spring.prueba1.pa_prueba1.model.Barbero;
 import com.pa.spring.prueba1.pa_prueba1.service.EmailService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import java.util.Map;
@@ -26,6 +27,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Servicio para gestión de Barberos con Soft Delete
+ * 
+ * @author Tu Nombre
+ * @version 2.0 - Implementación completa de soft delete con notificaciones
+ */
 @Service
 public class BarberoService {
 
@@ -47,6 +54,9 @@ public class BarberoService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired(required = false)
+    private TurnoRepository turnoRepository;
+
     // ==================== MÉTODOS BÁSICOS ====================
 
     public Barbero obtenerBarberoPorEmail(String email) {
@@ -59,18 +69,19 @@ public class BarberoService {
                 .orElseThrow(() -> new RuntimeException("Barbero no encontrado con ID: " + id));
     }
 
-    /**
-     * Obtiene una solicitud de ausencia por su ID
-     * 
-     * @param id ID de la solicitud
-     * @return La solicitud o null si no existe
-     */
     public SolicitudAusencia obtenerSolicitudPorId(Long id) {
         return solicitudAusenciaRepository.findById(id).orElse(null);
     }
 
     public List<Barbero> obtenerBarberosActivos() {
         return barberoRepository.findByActivoTrue();
+    }
+
+    /**
+     * Obtiene barberos inactivos/desvinculados
+     */
+    public List<Barbero> obtenerBarberosInactivos() {
+        return barberoRepository.findByActivoFalse();
     }
 
     public List<Reserva> obtenerReservasSemanaActual(Long idBarbero) {
@@ -84,15 +95,7 @@ public class BarberoService {
                 idBarbero, inicioSemana, finSemana);
     }
 
-    /**
-     * NUEVO MÉTODO: Obtiene TODAS las reservas de un barbero sin filtrar por fecha
-     * 
-     * @param idBarbero ID del barbero
-     * @return Lista de todas las reservas del barbero ordenadas por fecha
-     *         ascendente
-     */
     public List<Reserva> obtenerTodasReservasBarbero(Long idBarbero) {
-        // Usa el nuevo método del repositorio que obtiene todas las reservas ordenadas
         return reservaRepository.findByBarbero_IdBarberoOrderByFechaHoraTurnoAsc(idBarbero);
     }
 
@@ -104,6 +107,12 @@ public class BarberoService {
     public Barbero registrarBarbero(Barbero barbero, String passwordPlain) {
         if (barberoRepository.existsByEmail(barbero.getEmail())) {
             throw new RuntimeException("Ya existe un barbero con el email: " + barbero.getEmail());
+        }
+
+        if (barbero.getDocumento() != null && !barbero.getDocumento().trim().isEmpty()) {
+            if (barberoRepository.existsByDocumento(barbero.getDocumento())) {
+                throw new RuntimeException("Ya existe un barbero con el documento: " + barbero.getDocumento());
+            }
         }
 
         barbero.setPassword(passwordEncoder.encode(passwordPlain));
@@ -142,11 +151,210 @@ public class BarberoService {
         barberoRepository.save(barbero);
     }
 
+    /**
+     * Cambia el estado de un barbero (activo/inactivo)
+     * Usa actualización directa para evitar errores de entidad
+     */
     @Transactional
     public void cambiarEstadoBarbero(Long idBarbero, boolean activo) {
+        barberoRepository.actualizarEstado(idBarbero, activo);
+    }
+
+    // ==================== MÉTODOS DE SOFT DELETE ====================
+
+    /**
+     * Desvincula un barbero de forma normal (sin reservas activas)
+     * 
+     * @param idBarbero ID del barbero
+     * @param motivo    Motivo de la desvinculación
+     * @throws RuntimeException si el barbero tiene reservas futuras activas
+     */
+    @Transactional
+    public void desvincularBarbero(Long idBarbero, String motivo) {
         Barbero barbero = obtenerBarberoPorId(idBarbero);
-        barbero.setActivo(activo);
+
+        // Verificar que no tenga reservas futuras activas
+        LocalDateTime ahora = LocalDateTime.now();
+        List<Reserva> reservasFuturas = reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(
+                idBarbero, ahora, ahora.plusYears(1));
+
+        long reservasActivas = reservasFuturas.stream()
+                .filter(r -> r.getEstado() == Reserva.EstadoReserva.PENDIENTE)
+                .count();
+
+        if (reservasActivas > 0) {
+            throw new RuntimeException(
+                    "No se puede desvincular el barbero porque tiene " + reservasActivas +
+                            " reservas futuras activas. Use la desvinculación de emergencia.");
+        }
+
+        barbero.desvincular(motivo);
         barberoRepository.save(barbero);
+
+        System.out.println("✅ Barbero desvinculado: " + barbero.getNombreCompleto());
+    }
+
+    /**
+     * Desvincula un barbero de emergencia (aunque tenga reservas)
+     * Cancela todas las reservas y notifica a los clientes
+     * 
+     * @param idBarbero       ID del barbero
+     * @param motivo          Motivo de la desvinculación
+     * @param mensajeClientes Mensaje personalizado para clientes (opcional)
+     * @return número de reservas canceladas
+     */
+    @Transactional
+    public int desvincularBarberoEmergencia(Long idBarbero, String motivo, String mensajeClientes) {
+        Barbero barbero = obtenerBarberoPorId(idBarbero);
+
+        // Obtener reservas futuras activas
+        LocalDateTime ahora = LocalDateTime.now();
+        List<Reserva> reservasFuturas = reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(
+                idBarbero, ahora, ahora.plusMonths(3));
+
+        List<Reserva> reservasActivas = reservasFuturas.stream()
+                .filter(r -> r.getEstado() == Reserva.EstadoReserva.PENDIENTE)
+                .collect(java.util.stream.Collectors.toList());
+
+        // Cancelar todas las reservas y notificar
+        int reservasCanceladas = cancelarReservasYNotificarClientes(reservasActivas, barbero, motivo, mensajeClientes);
+
+        // Desvincular al barbero
+        barbero.desvincular("EMERGENCIA: " + motivo);
+        barberoRepository.save(barbero);
+
+        System.out.println("✅ Barbero desvinculado en emergencia: " + barbero.getNombreCompleto());
+        System.out.println("📊 Reservas canceladas y notificadas: " + reservasCanceladas);
+
+        return reservasCanceladas;
+    }
+
+    /**
+     * Reasigna reservas de un barbero a otro y notifica a los clientes
+     * 
+     * @param idBarberoOriginal  ID del barbero original (será desvinculado)
+     * @param idBarberoSustituto ID del barbero sustituto
+     * @param motivo             Motivo de la desvinculación
+     * @param mensajeClientes    Mensaje personalizado (opcional)
+     * @return número de reservas reasignadas
+     */
+    @Transactional
+    public int reasignarYDesvincularBarbero(Long idBarberoOriginal, Long idBarberoSustituto,
+            String motivo, String mensajeClientes) {
+        Barbero barberoOriginal = obtenerBarberoPorId(idBarberoOriginal);
+        Barbero barberoSustituto = obtenerBarberoPorId(idBarberoSustituto);
+
+        if (!barberoSustituto.isActivo()) {
+            throw new RuntimeException("El barbero sustituto no está activo");
+        }
+
+        // Obtener reservas futuras activas
+        LocalDateTime ahora = LocalDateTime.now();
+        List<Reserva> reservasFuturas = reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(
+                idBarberoOriginal, ahora, ahora.plusMonths(3));
+
+        List<Reserva> reservasActivas = reservasFuturas.stream()
+                .filter(r -> r.getEstado() == Reserva.EstadoReserva.PENDIENTE)
+                .collect(java.util.stream.Collectors.toList());
+
+        // Reasignar reservas
+        int reservasReasignadas = reasignarReservas(reservasActivas, barberoOriginal, barberoSustituto,
+                mensajeClientes);
+
+        // Desvincular al barbero original
+        barberoOriginal.desvincular("EMERGENCIA - Reasignado: " + motivo);
+        barberoRepository.save(barberoOriginal);
+
+        System.out.println("✅ Barbero desvinculado: " + barberoOriginal.getNombreCompleto());
+        System.out.println("🔄 Reservas reasignadas a: " + barberoSustituto.getNombreCompleto());
+        System.out.println("📊 Total reasignadas: " + reservasReasignadas);
+
+        return reservasReasignadas;
+    }
+
+    /**
+     * Reactiva un barbero desvinculado
+     * 
+     * @param idBarbero ID del barbero
+     */
+    @Transactional
+    public void reactivarBarbero(Long idBarbero) {
+        Barbero barbero = obtenerBarberoPorId(idBarbero);
+        barbero.reactivar();
+        barberoRepository.save(barbero);
+
+        System.out.println("✅ Barbero reactivado: " + barbero.getNombreCompleto());
+    }
+
+    // ==================== MÉTODOS AUXILIARES PRIVADOS ====================
+
+    /**
+     * Cancela todas las reservas y notifica a los clientes por email
+     */
+    private int cancelarReservasYNotificarClientes(List<Reserva> reservas, Barbero barbero,
+            String motivo, String mensajePersonalizado) {
+        int canceladas = 0;
+
+        for (Reserva reserva : reservas) {
+            try {
+                // Cancelar reserva
+                reserva.setEstado(Reserva.EstadoReserva.CANCELADA);
+                reservaRepository.save(reserva);
+
+                // Notificar al cliente por email
+                try {
+                    emailService.notificarCancelacionPorDesvinculacion(
+                            reserva.getCliente(),
+                            reserva,
+                            barbero,
+                            motivo);
+                    System.out.println("✅ Email enviado a: " + reserva.getCliente().getCorreo());
+                } catch (Exception e) {
+                    System.err.println(
+                            "❌ Error al enviar email a " + reserva.getCliente().getCorreo() + ": " + e.getMessage());
+                }
+
+                canceladas++;
+            } catch (Exception e) {
+                System.err.println("❌ Error al cancelar reserva " + reserva.getIdReserva() + ": " + e.getMessage());
+            }
+        }
+
+        return canceladas;
+    }
+
+    /**
+     * Reasigna reservas a otro barbero y notifica a los clientes
+     */
+    private int reasignarReservas(List<Reserva> reservas, Barbero barberoOriginal,
+            Barbero barberoSustituto, String mensajePersonalizado) {
+        int reasignadas = 0;
+
+        for (Reserva reserva : reservas) {
+            try {
+                // Reasignar barbero
+                reserva.setBarbero(barberoSustituto);
+                reservaRepository.save(reserva);
+
+                // Notificar al cliente por email
+                try {
+                    emailService.notificarReasignacionReserva(
+                            reserva.getCliente(),
+                            reserva,
+                            barberoOriginal,
+                            barberoSustituto);
+                    System.out.println("✅ Email de reasignación enviado a: " + reserva.getCliente().getCorreo());
+                } catch (Exception e) {
+                    System.err.println("❌ Error al enviar email: " + e.getMessage());
+                }
+
+                reasignadas++;
+            } catch (Exception e) {
+                System.err.println("❌ Error al reasignar reserva " + reserva.getIdReserva() + ": " + e.getMessage());
+            }
+        }
+
+        return reasignadas;
     }
 
     public boolean estaDisponible(Long idBarbero, java.time.LocalDate fecha) {
@@ -164,7 +372,6 @@ public class BarberoService {
     public SolicitudAusencia crearSolicitudAusencia(SolicitudAusencia solicitud) {
         Barbero barbero = obtenerBarberoPorId(solicitud.getBarbero().getIdBarbero());
 
-        // Validaciones según tipo de ausencia
         if (solicitud.getTipoAusencia() == SolicitudAusencia.TipoAusencia.DIA_COMPLETO) {
             if (solicitud.getFechaInicio() == null || solicitud.getFechaFin() == null) {
                 throw new RuntimeException("Debe especificar fecha de inicio y fin para día completo");
@@ -229,7 +436,6 @@ public class BarberoService {
         Reserva reserva = reservaRepository.findById(idReserva)
                 .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
 
-        // Verificar que la reserva pertenece al barbero
         if (!reserva.getBarbero().getIdBarbero().equals(idBarbero)) {
             throw new RuntimeException("No tienes permiso para eliminar esta reserva");
         }
@@ -287,7 +493,8 @@ public class BarberoService {
             return !solicitud1.getFecha().isBefore(solicitud2.getFechaInicio()) &&
                     !solicitud1.getFecha().isAfter(solicitud2.getFechaFin());
         }
-    }
+    }// ==================== CONTINUACIÓN DE BarberoService.java ====================
+    // Esta es la parte 2/2 - Agregar después de los métodos de ausencias
 
     public List<SolicitudAusencia> obtenerSolicitudesPendientes() {
         return solicitudAusenciaRepository.findByEstado(SolicitudAusencia.EstadoSolicitud.PENDIENTE);
@@ -310,29 +517,25 @@ public class BarberoService {
             throw new IllegalStateException("Solo se pueden aprobar solicitudes pendientes");
         }
 
-        // VALIDAR FECHAS SEGÚN TIPO DE AUSENCIA
         if (solicitud.getTipoAusencia() == SolicitudAusencia.TipoAusencia.DIA_COMPLETO) {
             if (solicitud.getFechaInicio() == null) {
-                throw new IllegalStateException("La solicitud no tiene fecha de inicio válida. No se puede aprobar.");
+                throw new IllegalStateException("La solicitud no tiene fecha de inicio válida");
             }
-            // Si no hay fecha fin, usar fecha inicio como fecha fin
             if (solicitud.getFechaFin() == null) {
                 solicitud.setFechaFin(solicitud.getFechaInicio());
             }
         } else if (solicitud.getTipoAusencia() == SolicitudAusencia.TipoAusencia.HORAS_ESPECIFICAS) {
             if (solicitud.getFecha() == null) {
-                throw new IllegalStateException("La solicitud no tiene fecha válida. No se puede aprobar.");
+                throw new IllegalStateException("La solicitud no tiene fecha válida");
             }
             if (solicitud.getHoraInicio() == null || solicitud.getHoraFin() == null) {
-                throw new IllegalStateException("La solicitud no tiene horarios válidos. No se puede aprobar.");
+                throw new IllegalStateException("La solicitud no tiene horarios válidos");
             }
         }
 
-        // CANCELAR RESERVAS EXISTENTES Y NOTIFICAR CLIENTES
         List<Reserva> reservasAfectadas = obtenerReservasAfectadasPorAusencia(solicitud);
-        int reservasCanceladas = cancelarReservasYNotificarClientes(reservasAfectadas, solicitud);
+        int reservasCanceladas = cancelarReservasYNotificarClientesPorAusencia(reservasAfectadas, solicitud);
 
-        // Actualizar estado de la solicitud
         solicitud.setEstado(SolicitudAusencia.EstadoSolicitud.APROBADA);
         solicitud.setFechaRespuesta(LocalDateTime.now());
 
@@ -342,7 +545,6 @@ public class BarberoService {
 
         solicitudAusenciaRepository.save(solicitud);
 
-        // Crear notificación para el barbero
         String fechaTexto;
         try {
             fechaTexto = formatearFecha(solicitud);
@@ -352,7 +554,7 @@ public class BarberoService {
 
         String mensaje = "Tu solicitud de ausencia para " + fechaTexto + " ha sido aprobada";
         if (reservasCanceladas > 0) {
-            mensaje += ". Se cancelaron " + reservasCanceladas + " reserva(s) existente(s) y se notificó a los clientes.";
+            mensaje += ". Se cancelaron " + reservasCanceladas + " reserva(s) y se notificó a los clientes.";
         }
         if (comentario != null && !comentario.trim().isEmpty()) {
             mensaje += " Comentario: " + comentario;
@@ -385,7 +587,6 @@ public class BarberoService {
 
         solicitudAusenciaRepository.save(solicitud);
 
-        // Crear notificación
         crearNotificacion(
                 solicitud.getBarbero(),
                 Notificacion.TipoNotificacion.AUSENCIA_RECHAZADA,
@@ -479,15 +680,49 @@ public class BarberoService {
             if (barberoRepository.existsByEmail(barbero.getEmail())) {
                 throw new RuntimeException("Ya existe un barbero con el email: " + barbero.getEmail());
             }
+
+            if (barbero.getDocumento() != null && !barbero.getDocumento().trim().isEmpty()) {
+                if (barberoRepository.existsByDocumento(barbero.getDocumento())) {
+                    throw new RuntimeException("Ya existe un barbero con el documento: " + barbero.getDocumento());
+                }
+            }
+
             barbero.setActivo(true);
+        } else {
+            Optional<Barbero> barberoConMismoEmail = barberoRepository.findByEmail(barbero.getEmail());
+            if (barberoConMismoEmail.isPresent() &&
+                    !barberoConMismoEmail.get().getIdBarbero().equals(barbero.getIdBarbero())) {
+                throw new RuntimeException("Ya existe otro barbero con el email: " + barbero.getEmail());
+            }
+
+            if (barbero.getDocumento() != null && !barbero.getDocumento().trim().isEmpty()) {
+                Optional<Barbero> barberoConMismoDocumento = barberoRepository.findByDocumento(barbero.getDocumento());
+                if (barberoConMismoDocumento.isPresent() &&
+                        !barberoConMismoDocumento.get().getIdBarbero().equals(barbero.getIdBarbero())) {
+                    throw new RuntimeException("Ya existe otro barbero con el documento: " + barbero.getDocumento());
+                }
+            }
         }
+
         return barberoRepository.save(barbero);
     }
 
+    /**
+     * Elimina permanentemente un barbero (solo si está desvinculado y sin
+     * relaciones)
+     */
     @Transactional
     public void eliminar(Long id) {
         Barbero barbero = obtenerBarberoPorId(id);
 
+        // Verificar que el barbero esté desvinculado
+        if (barbero.isActivo()) {
+            throw new RuntimeException(
+                    "No se puede eliminar un barbero activo. " +
+                            "Primero debe desvincularlo.");
+        }
+
+        // Verificar reservas futuras
         LocalDateTime ahora = LocalDateTime.now();
         List<Reserva> reservasFuturas = reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(
                 id, ahora, ahora.plusYears(1));
@@ -497,8 +732,19 @@ public class BarberoService {
                 .count();
 
         if (reservasActivas > 0) {
-            throw new RuntimeException("No se puede eliminar el barbero porque tiene " +
-                    reservasActivas + " reservas activas");
+            throw new RuntimeException(
+                    "No se puede eliminar el barbero porque tiene " + reservasActivas +
+                            " reservas futuras. Se recomienda mantenerlo desvinculado.");
+        }
+
+        // Verificar turnos
+        if (turnoRepository != null) {
+            long turnosPendientes = turnoRepository.countByBarberoIdBarbero(id);
+            if (turnosPendientes > 0) {
+                throw new RuntimeException(
+                        "No se puede eliminar el barbero porque tiene " + turnosPendientes +
+                                " turnos asociados. Elimine primero los turnos.");
+            }
         }
 
         barberoRepository.delete(barbero);
@@ -509,8 +755,121 @@ public class BarberoService {
     }
 
     public Barbero obtenerPorId(Long id) {
-        Optional<Barbero> barbero = barberoRepository.findById(id);
-        return barbero.orElse(null);
+        return barberoRepository.findById(id).orElse(null);
+    }
+
+    // ==================== MÉTODOS AUXILIARES ====================
+
+    private String formatearFecha(SolicitudAusencia solicitud) {
+        try {
+            if (solicitud.getTipoAusencia() == SolicitudAusencia.TipoAusencia.HORAS_ESPECIFICAS) {
+                if (solicitud.getFecha() != null) {
+                    String fecha = solicitud.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    if (solicitud.getHoraInicio() != null && solicitud.getHoraFin() != null) {
+                        return fecha + " de " + solicitud.getHoraInicio() + " a " + solicitud.getHoraFin();
+                    }
+                    return fecha;
+                }
+            } else {
+                if (solicitud.getFechaInicio() != null) {
+                    if (solicitud.getFechaFin() != null
+                            && !solicitud.getFechaInicio().equals(solicitud.getFechaFin())) {
+                        return solicitud.getFechaInicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
+                                " al " + solicitud.getFechaFin().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                    }
+                    return solicitud.getFechaInicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                }
+            }
+        } catch (Exception e) {
+            return "la fecha solicitada";
+        }
+        return "la fecha solicitada";
+    }
+
+    private List<Reserva> obtenerReservasAfectadasPorAusencia(SolicitudAusencia solicitud) {
+        Long idBarbero = solicitud.getBarbero().getIdBarbero();
+        List<Reserva> reservasAfectadas = new java.util.ArrayList<>();
+
+        if (solicitud.getTipoAusencia() == SolicitudAusencia.TipoAusencia.DIA_COMPLETO) {
+            LocalDateTime inicioAusencia = solicitud.getFechaInicio().atStartOfDay();
+            LocalDateTime finAusencia = solicitud.getFechaFin().atTime(23, 59, 59);
+
+            reservasAfectadas = reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(
+                    idBarbero, inicioAusencia, finAusencia);
+
+        } else if (solicitud.getTipoAusencia() == SolicitudAusencia.TipoAusencia.HORAS_ESPECIFICAS) {
+            LocalDateTime inicioAusencia = LocalDateTime.of(solicitud.getFecha(), solicitud.getHoraInicio());
+            LocalDateTime finAusencia = LocalDateTime.of(solicitud.getFecha(), solicitud.getHoraFin());
+
+            reservasAfectadas = reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(
+                    idBarbero, inicioAusencia, finAusencia);
+        }
+
+        return reservasAfectadas.stream()
+                .filter(r -> r.getEstado() == Reserva.EstadoReserva.COMPLETADA ||
+                        r.getEstado() == Reserva.EstadoReserva.PENDIENTE)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    private int cancelarReservasYNotificarClientesPorAusencia(List<Reserva> reservas, SolicitudAusencia solicitud) {
+        int canceladas = 0;
+
+        for (Reserva reserva : reservas) {
+            try {
+                reserva.setEstado(Reserva.EstadoReserva.CANCELADA);
+                reservaRepository.save(reserva);
+
+                try {
+                    emailService.notificarCancelacionPorAusencia(
+                            reserva.getCliente(),
+                            reserva,
+                            solicitud.getBarbero(),
+                            "El barbero estará ausente");
+                } catch (Exception e) {
+                    System.err.println("Error al enviar email: " + e.getMessage());
+                }
+
+                canceladas++;
+            } catch (Exception e) {
+                System.err.println("Error al cancelar reserva " + reserva.getIdReserva() + ": " + e.getMessage());
+            }
+        }
+
+        return canceladas;
+    }
+
+    public boolean esBarberoDisponibleEnFechaHora(Long idBarbero, LocalDateTime fechaHora) {
+        List<SolicitudAusencia> ausenciasAprobadas = solicitudAusenciaRepository
+                .findByBarberoIdBarberoAndEstado(idBarbero, SolicitudAusencia.EstadoSolicitud.APROBADA);
+
+        for (SolicitudAusencia ausencia : ausenciasAprobadas) {
+            if (ausencia.getTipoAusencia() == SolicitudAusencia.TipoAusencia.DIA_COMPLETO) {
+                java.time.LocalDate fecha = fechaHora.toLocalDate();
+                if (!fecha.isBefore(ausencia.getFechaInicio()) && !fecha.isAfter(ausencia.getFechaFin())) {
+                    return false;
+                }
+            } else if (ausencia.getTipoAusencia() == SolicitudAusencia.TipoAusencia.HORAS_ESPECIFICAS) {
+                if (fechaHora.toLocalDate().equals(ausencia.getFecha())) {
+                    java.time.LocalTime hora = fechaHora.toLocalTime();
+                    if (!hora.isBefore(ausencia.getHoraInicio()) && hora.isBefore(ausencia.getHoraFin())) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public void validarDisponibilidadParaReserva(Long idBarbero, LocalDateTime fechaHora) {
+        if (!esBarberoDisponibleEnFechaHora(idBarbero, fechaHora)) {
+            throw new RuntimeException("El barbero no está disponible en la fecha y hora seleccionadas");
+        }
+    }
+
+    public List<Reserva> obtenerReservasPorRangoFechas(Long idBarbero, LocalDateTime fechaInicio,
+            LocalDateTime fechaFin) {
+        return reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(idBarbero, fechaInicio, fechaFin);
     }
 
     // ==================== MÉTODOS PARA NOTIFICACIONES ====================
@@ -537,12 +896,6 @@ public class BarberoService {
     public List<Notificacion> obtenerNotificacionesNoLeidas(Long idBarbero) {
         return notificacionRepository.findByBarberoIdBarberoAndLeidaOrderByFechaCreacionDesc(
                 idBarbero, false);
-    }
-
-    public List<Notificacion> obtenerNotificacionesPorTipo(Long idBarbero,
-            Notificacion.TipoNotificacion tipo) {
-        return notificacionRepository.findByBarberoIdBarberoAndTipoOrderByFechaCreacionDesc(
-                idBarbero, tipo);
     }
 
     public long contarNotificacionesNoLeidas(Long idBarbero) {
@@ -576,261 +929,51 @@ public class BarberoService {
         notificacionRepository.delete(notificacion);
     }
 
-    /**
-     * Formatea las fechas de una solicitud para mostrar en notificaciones
-     * Con validaciones robustas para evitar NullPointerException
-     */
-    private String formatearFecha(SolicitudAusencia solicitud) {
-        try {
-            if (solicitud.getTipoAusencia() == SolicitudAusencia.TipoAusencia.HORAS_ESPECIFICAS) {
-                if (solicitud.getFecha() != null) {
-                    String fecha = solicitud.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-                    if (solicitud.getHoraInicio() != null && solicitud.getHoraFin() != null) {
-                        return fecha + " de " + solicitud.getHoraInicio() + " a " + solicitud.getHoraFin();
-                    }
-                    return fecha;
-                }
-            } else {
-                if (solicitud.getFechaInicio() != null) {
-                    if (solicitud.getFechaFin() != null && !solicitud.getFechaInicio().equals(solicitud.getFechaFin())) {
-                        return solicitud.getFechaInicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) +
-                                " al " + solicitud.getFechaFin().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-                    }
-                    return solicitud.getFechaInicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-                }
-            }
-        } catch (Exception e) {
-            // Si hay cualquier error al formatear, devolver texto genérico
-            return "la fecha solicitada";
-        }
-        return "la fecha solicitada";
-    }
-
-    /**
-     * Obtiene las reservas que serán afectadas por una ausencia
-     */
-    private List<Reserva> obtenerReservasAfectadasPorAusencia(SolicitudAusencia solicitud) {
-        Long idBarbero = solicitud.getBarbero().getIdBarbero();
-        List<Reserva> reservasAfectadas = new java.util.ArrayList<>();
-
-        if (solicitud.getTipoAusencia() == SolicitudAusencia.TipoAusencia.DIA_COMPLETO) {
-            LocalDateTime inicioAusencia = solicitud.getFechaInicio().atStartOfDay();
-            LocalDateTime finAusencia = solicitud.getFechaFin().atTime(23, 59, 59);
-
-            reservasAfectadas = reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(
-                    idBarbero, inicioAusencia, finAusencia);
-
-        } else if (solicitud.getTipoAusencia() == SolicitudAusencia.TipoAusencia.HORAS_ESPECIFICAS) {
-            LocalDateTime inicioAusencia = LocalDateTime.of(solicitud.getFecha(), solicitud.getHoraInicio());
-            LocalDateTime finAusencia = LocalDateTime.of(solicitud.getFecha(), solicitud.getHoraFin());
-
-            reservasAfectadas = reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(
-                    idBarbero, inicioAusencia, finAusencia);
-        }
-
-        // Filtrar solo las que no están canceladas o completadas
-        return reservasAfectadas.stream()
-                .filter(r -> r.getEstado() == Reserva.EstadoReserva.COMPLETADA || 
-                            r.getEstado() == Reserva.EstadoReserva.PENDIENTE)
-                .collect(java.util.stream.Collectors.toList());
-    }
-
-    /**
-     * Cancela las reservas afectadas y notifica a los clientes
-     * @return número de reservas canceladas
-     */
-    private int cancelarReservasYNotificarClientes(List<Reserva> reservas, SolicitudAusencia solicitud) {
-        int canceladas = 0;
-
-        for (Reserva reserva : reservas) {
-            try {
-                // Cancelar la reserva
-                reserva.setEstado(Reserva.EstadoReserva.CANCELADA);
-                reservaRepository.save(reserva);
-
-                // Crear mensaje para el cliente
-                String mensajeCliente = String.format(
-                    "Lo sentimos, tu reserva del %s a las %s con %s %s ha sido cancelada debido a que el barbero estará ausente. " +
-                    "Por favor, agenda una nueva cita. Disculpa los inconvenientes.",
-                    reserva.getFechaHoraTurno().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                    reserva.getFechaHoraTurno().format(DateTimeFormatter.ofPattern("HH:mm")),
-                    solicitud.getBarbero().getNombre(),
-                    solicitud.getBarbero().getApellido()
-                );
-
-                // Enviar notificación al cliente
-                enviarNotificacionCliente(reserva.getCliente(), mensajeCliente, reserva);
-
-                canceladas++;
-            } catch (Exception e) {
-                // Log del error pero continuar con las demás reservas
-                System.err.println("Error al cancelar reserva " + reserva.getIdReserva() + ": " + e.getMessage());
-            }
-        }
-
-        return canceladas;
-    }
-
-    /**
-     * Envía notificación al cliente sobre la cancelación
-     * Puedes implementar esto con emails, SMS, o sistema de notificaciones web
-     */
-    private void enviarNotificacionCliente(com.pa.spring.prueba1.pa_prueba1.model.Cliente cliente, 
-                                           String mensaje, 
-                                           Reserva reserva) {
-        try {
-            // Enviar email al cliente
-            emailService.notificarCancelacionPorAusencia(
-                cliente, 
-                reserva, 
-                reserva.getBarbero(),
-                "El barbero estará ausente en esta fecha"
-            );
-            
-            System.out.println("✅ Email enviado a: " + cliente.getNombre() + " (" + cliente.getCorreo() + ")");
-        } catch (Exception e) {
-            // Si falla el email, al menos logeamos
-            System.err.println("❌ Error al enviar email a " + cliente.getCorreo() + ": " + e.getMessage());
-            System.out.println("NOTIFICACIÓN CLIENTE: " + cliente.getNombre() + " (" + cliente.getCorreo() + ") - " + mensaje);
-        }
-    }
-
-    /**
-     * Verifica si un barbero está disponible en una fecha/hora específica
-     * considerando sus ausencias aprobadas
-     */
-    public boolean esBarberoDisponibleEnFechaHora(Long idBarbero, LocalDateTime fechaHora) {
-        List<SolicitudAusencia> ausenciasAprobadas = solicitudAusenciaRepository
-            .findByBarberoIdBarberoAndEstado(idBarbero, SolicitudAusencia.EstadoSolicitud.APROBADA);
-        
-        for (SolicitudAusencia ausencia : ausenciasAprobadas) {
-            if (ausencia.getTipoAusencia() == SolicitudAusencia.TipoAusencia.DIA_COMPLETO) {
-                java.time.LocalDate fecha = fechaHora.toLocalDate();
-                if (!fecha.isBefore(ausencia.getFechaInicio()) && !fecha.isAfter(ausencia.getFechaFin())) {
-                    return false;
-                }
-            } else if (ausencia.getTipoAusencia() == SolicitudAusencia.TipoAusencia.HORAS_ESPECIFICAS) {
-                if (fechaHora.toLocalDate().equals(ausencia.getFecha())) {
-                    java.time.LocalTime hora = fechaHora.toLocalTime();
-                    if (!hora.isBefore(ausencia.getHoraInicio()) && hora.isBefore(ausencia.getHoraFin())) {
-                        return false;
-                    }
-                }
-            }
-        }
-        
-        return true;
-    }
-
-    /**
-     * Valida si se puede crear una reserva en la fecha/hora solicitada
-     * Lanza excepción si el barbero está ausente
-     */
-    public void validarDisponibilidadParaReserva(Long idBarbero, LocalDateTime fechaHora) {
-        if (!esBarberoDisponibleEnFechaHora(idBarbero, fechaHora)) {
-            throw new RuntimeException("El barbero no está disponible en la fecha y hora seleccionadas debido a una ausencia programada. Por favor, selecciona otro horario.");
-        }
-    }
-
-    /**
-     * Obtiene las reservas de un barbero en un rango de fechas
-     * Para estadísticas y reportes
-     */
-    public List<Reserva> obtenerReservasPorRangoFechas(Long idBarbero, LocalDateTime fechaInicio, LocalDateTime fechaFin) {
-        return reservaRepository.findByBarberoIdBarberoAndFechaHoraTurnoBetween(idBarbero, fechaInicio, fechaFin);
-    }
-    // AGREGAR ESTOS MÉTODOS AL FINAL DE TU CLASE BarberoService (antes del último })
-
-    // ==================== NUEVOS MÉTODOS PARA NOTIFICACIONES CON PAGINACIÓN ====================
-
-    /**
-     * Obtiene notificaciones con paginación
-     */
-    public Page<Notificacion> obtenerNotificacionesBarberoP(Long idBarbero, Pageable pageable) {
-        return notificacionRepository.findByBarberoIdBarberoOrderByFechaCreacionDesc(idBarbero, pageable);
-    }
-
-    /**
-     * Obtiene notificaciones no leídas con paginación
-     */
-    public Page<Notificacion> obtenerNotificacionesNoLeidasPaginadas(Long idBarbero, Pageable pageable) {
-        return notificacionRepository.findByBarberoIdBarberoAndLeidaOrderByFechaCreacionDesc(
-            idBarbero, false, pageable
-        );
-    }
-
-    /**
-     * Obtiene notificaciones por tipo con paginación
-     */
-    public Page<Notificacion> obtenerNotificacionesPorTipoPaginadas(
-            Long idBarbero, 
-            Notificacion.TipoNotificacion tipo, 
-            Pageable pageable) {
-        return notificacionRepository.findByBarberoIdBarberoAndTipoOrderByFechaCreacionDesc(
-            idBarbero, tipo, pageable
-        );
-    }
-
-    /**
-     * Busca notificaciones por texto
-     */
-    public Page<Notificacion> buscarNotificaciones(Long idBarbero, String texto, Pageable pageable) {
-        return notificacionRepository.buscarPorTexto(idBarbero, texto, pageable);
-    }
-
-    /**
-     * Cuenta notificaciones por múltiples tipos
-     */
-    public long contarNotificacionesPorTipos(Long idBarbero, List<Notificacion.TipoNotificacion> tipos) {
-        return notificacionRepository.countByBarberoIdBarberoAndTipoIn(idBarbero, tipos);
-    }
-
-    /**
-     * Cuenta notificaciones por un tipo específico
-     */
-    public long contarNotificacionesPorTipo(Long idBarbero, Notificacion.TipoNotificacion tipo) {
-        return notificacionRepository.countByBarberoIdBarberoAndTipo(idBarbero, tipo);
-    }
-
-    /**
-     * Obtiene las últimas N notificaciones
-     */
-    public List<Notificacion> obtenerUltimasNotificaciones(Long idBarbero, int cantidad) {
-        Pageable pageable = PageRequest.of(0, cantidad, Sort.by("fechaCreacion").descending());
+    public List<Notificacion> obtenerNotificacionesRecientes(Long idBarbero) {
+        Pageable pageable = PageRequest.of(0, 5, Sort.by("fechaCreacion").descending());
         Page<Notificacion> page = notificacionRepository.findByBarberoIdBarberoOrderByFechaCreacionDesc(
-            idBarbero, pageable
-        );
+                idBarbero, pageable);
         return page.getContent();
     }
 
-    /**
-     * Marca todas las notificaciones como leídas (versión optimizada)
-     */
-    @Transactional
-    public void marcarTodasComoLeidasOptimizado(Long idBarbero) {
-        notificacionRepository.marcarTodasComoLeidas(idBarbero);
+    public void guardarConfiguracionNotificaciones(Long idBarbero, Map<String,Boolean> configuracion) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'guardarConfiguracionNotificaciones'");
     }
 
-    /**
-     * Guarda configuración de notificaciones del barbero
-     */
-    @Transactional
-    public void guardarConfiguracionNotificaciones(Long idBarbero, Map<String, Boolean> configuracion) {
-        // Por ahora solo validamos que el barbero existe
-        Barbero barbero = obtenerBarberoPorId(idBarbero);
-        
-        // Aquí puedes implementar la lógica para guardar las preferencias
-        // Por ejemplo, en una tabla separada o en un campo JSON en Barbero
-        System.out.println("✅ Configuración guardada para barbero: " + barbero.getNombre());
-        System.out.println("Configuración: " + configuracion);
-        
-        // TODO: Implementar guardado real de preferencias según tu modelo de datos
+    public List<Notificacion> obtenerUltimasNotificaciones(Long idBarbero, int i) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'obtenerUltimasNotificaciones'");
     }
 
-    /**
-     * Obtiene notificaciones recientes (últimas 5) para el dropdown del navbar
-     */
-    public List<Notificacion> obtenerNotificacionesRecientes(Long idBarbero) {
-        return obtenerUltimasNotificaciones(idBarbero, 5);
+    public long contarNotificacionesPorTipo(Long idBarbero, TipoNotificacion sistema) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'contarNotificacionesPorTipo'");
+    }
+
+    public long contarNotificacionesPorTipos(Long idBarbero, List<TipoNotificacion> of) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'contarNotificacionesPorTipos'");
+    }
+
+    public Page<Notificacion> obtenerNotificacionesBarberoP(Long idBarbero, Pageable pageable) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'obtenerNotificacionesBarberoP'");
+    }
+
+    public Page<Notificacion> obtenerNotificacionesPorTipoPaginadas(Long idBarbero, TipoNotificacion tipoEnum,
+            Pageable pageable) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'obtenerNotificacionesPorTipoPaginadas'");
+    }
+
+    public Page<Notificacion> obtenerNotificacionesNoLeidasPaginadas(Long idBarbero, Pageable pageable) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'obtenerNotificacionesNoLeidasPaginadas'");
+    }
+
+    public Page<Notificacion> buscarNotificaciones(Long idBarbero, String buscar, Pageable pageable) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'buscarNotificaciones'");
     }
 }
