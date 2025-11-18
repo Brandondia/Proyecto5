@@ -14,7 +14,7 @@ import java.util.List;
 @Repository
 public interface NotificacionRepository extends JpaRepository<Notificacion, Long> {
     
-    // ==================== MÉTODOS EXISTENTES (sin cambios) ====================
+    // ==================== MÉTODOS EXISTENTES (sin paginación) ====================
     
     List<Notificacion> findByBarberoIdBarberoOrderByFechaCreacionDesc(Long idBarbero);
     
@@ -27,7 +27,7 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
         Notificacion.TipoNotificacion tipo
     );
     
-    // ==================== NUEVOS MÉTODOS PARA PAGINACIÓN ====================
+    // ==================== MÉTODOS CON PAGINACIÓN ====================
     
     /**
      * Obtiene todas las notificaciones de un barbero con paginación
@@ -53,6 +53,15 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     );
     
     /**
+     * Obtiene notificaciones por múltiples tipos con paginación
+     */
+    Page<Notificacion> findByBarberoIdBarberoAndTipoInOrderByFechaCreacionDesc(
+        Long idBarbero,
+        List<Notificacion.TipoNotificacion> tipos,
+        Pageable pageable
+    );
+    
+    /**
      * Busca notificaciones por texto en mensaje o título
      */
     @Query("SELECT n FROM Notificacion n WHERE n.barbero.idBarbero = :idBarbero " +
@@ -64,6 +73,8 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
         @Param("texto") String texto, 
         Pageable pageable
     );
+    
+    // ==================== CONTADORES ====================
     
     /**
      * Cuenta notificaciones por múltiples tipos
@@ -80,6 +91,8 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
         Long idBarbero, 
         Notificacion.TipoNotificacion tipo
     );
+    
+    // ==================== OPERACIONES MASIVAS ====================
     
     /**
      * Marca todas las notificaciones de un barbero como leídas

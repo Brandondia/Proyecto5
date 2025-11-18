@@ -13,7 +13,7 @@ import java.time.LocalTime;
  * Entidad Barbero con soporte para Soft Delete
  * 
  * @author Tu Nombre
- * @version 2.0 - Actualizado con soft delete
+ * @version 2.0 - Actualizado con soft delete y valores por defecto
  */
 @Entity
 @Getter 
@@ -147,16 +147,59 @@ public class Barbero {
 
     // ==================== CONSTRUCTORES ====================
     
+    /**
+     * Constructor por defecto con valores iniciales
+     * Requerido por JPA
+     */
     public Barbero() {
-        // Constructor por defecto requerido por JPA
+        // Inicializar valores por defecto
+        this.activo = true;
+        this.rol = "ROLE_BARBERO";
+        this.autenticacionDosPasos = false;
+        this.notifReservas = true;
+        this.notifCancelaciones = true;
+        this.notifRecordatorios = true;
     }
     
+    /**
+     * Constructor con datos básicos
+     * @param nombre Nombre del barbero
+     * @param email Email del barbero
+     * @param password Contraseña del barbero
+     */
     public Barbero(String nombre, String email, String password) {
+        this(); // Llama al constructor por defecto primero
         this.nombre = nombre;
         this.email = email;
         this.password = password;
-        this.activo = true;
-        this.rol = "ROLE_BARBERO";
+    }
+
+    // ==================== CALLBACKS DE JPA ====================
+    
+    /**
+     * Inicializa valores por defecto antes de persistir en la base de datos
+     * Garantiza que ningún campo requerido quede nulo
+     */
+    @PrePersist
+    protected void onCreate() {
+        if (this.autenticacionDosPasos == null) {
+            this.autenticacionDosPasos = false;
+        }
+        if (this.notifReservas == null) {
+            this.notifReservas = true;
+        }
+        if (this.notifCancelaciones == null) {
+            this.notifCancelaciones = true;
+        }
+        if (this.notifRecordatorios == null) {
+            this.notifRecordatorios = true;
+        }
+        if (this.rol == null || this.rol.isEmpty()) {
+            this.rol = "ROLE_BARBERO";
+        }
+        if (this.fechaIngreso == null) {
+            this.fechaIngreso = LocalDate.now();
+        }
     }
 
     // ==================== MÉTODOS AUXILIARES ====================
@@ -274,4 +317,4 @@ public class Barbero {
                 ", especialidad='" + especialidad + '\'' +
                 '}';
     }
-}
+}  

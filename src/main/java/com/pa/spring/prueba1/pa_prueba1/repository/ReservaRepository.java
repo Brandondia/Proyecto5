@@ -34,7 +34,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
     long countByEstado(Reserva.EstadoReserva estado);
 
-    // ==================== MÉTODOS NUEVOS PARA PANEL DEL BARBERO ====================
+    // ==================== MÉTODOS PARA PANEL DEL BARBERO ====================
 
     /**
      * Buscar reservas de un barbero en un rango de fechas, ordenadas por fecha
@@ -166,10 +166,10 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     @Query("SELECT r FROM Reserva r WHERE r.barbero.idBarbero = :idBarbero ORDER BY r.fechaHoraTurno ASC")
     List<Reserva> findAllReservasByBarberoOrderAsc(@Param("idBarbero") Long idBarbero);
 
-    // ==================== MÉTODOS NUEVOS PARA AUSENCIAS ====================
+    // ==================== MÉTODOS PARA AUSENCIAS ====================
 
     /**
-     * ✅ NUEVO: Verifica si existe una reserva para un barbero en una fecha/hora específica
+     *  NUEVO: Verifica si existe una reserva para un barbero en una fecha/hora específica
      * que NO esté en el estado especificado (para validar disponibilidad)
      */
     boolean existsByBarberoIdBarberoAndFechaHoraTurnoAndEstadoNot(
@@ -179,7 +179,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     );
 
     /**
-     * ✅ NUEVO: Encuentra todas las reservas activas (no canceladas) de un barbero
+     *  NUEVO: Encuentra todas las reservas activas (no canceladas) de un barbero
      * en un rango de fechas
      */
     List<Reserva> findByBarberoIdBarberoAndFechaHoraTurnoBetweenAndEstadoNot(
@@ -190,7 +190,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     );
 
     /**
-     * ✅ NUEVO: Encuentra todas las reservas de un barbero en un rango de fechas
+     *  NUEVO: Encuentra todas las reservas de un barbero en un rango de fechas
      * con un estado específico
      */
     List<Reserva> findByBarberoIdBarberoAndFechaHoraTurnoBetweenAndEstado(
@@ -199,4 +199,32 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
             LocalDateTime fechaFin,
             Reserva.EstadoReserva estado
     );
+
+    // ==================== MÉTODOS NUEVOS PARA DASHBOARD DE CLIENTE ====================
+
+    /**
+     *  NUEVO: Obtiene las reservas de un cliente filtradas por estado, ordenadas por fecha descendente
+     */
+    List<Reserva> findByClienteIdClienteAndEstadoOrderByFechaHoraTurnoDesc(
+            Long idCliente, 
+            Reserva.EstadoReserva estado
+    );
+    /**
+     *  VALIDACIÓN: Cuenta reservas pendientes de un cliente
+     */
+    long countByClienteIdClienteAndEstado(Long idCliente, Reserva.EstadoReserva estado);
+
+    /**
+     *  VALIDACIÓN: Cuenta reservas de un cliente en un rango de fechas
+     */
+    @Query("SELECT COUNT(r) FROM Reserva r WHERE r.cliente.idCliente = :idCliente " +
+           "AND r.fechaHoraTurno BETWEEN :inicio AND :fin")
+    long countByClienteAndFechaRange(@Param("idCliente") Long idCliente,
+                                     @Param("inicio") LocalDateTime inicio,
+                                     @Param("fin") LocalDateTime fin);
+
+    /**
+     *  VALIDACIÓN: Obtiene la última reserva creada por un cliente
+     */
+    Reserva findFirstByClienteIdClienteOrderByFechaHoraReservaDesc(Long idCliente);
 }

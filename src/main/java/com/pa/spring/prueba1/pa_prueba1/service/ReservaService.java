@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface ReservaService {
 
+    // ==================== MÉTODOS BÁSICOS ====================
+    
     // Obtiene todas las reservas
     List<Reserva> obtenerTodas();
 
@@ -39,5 +41,29 @@ public interface ReservaService {
 
     // Verifica si existe una reserva para un turno específico
     boolean existeReservaParaTurno(Long idTurno);
-}
 
+    // ==================== MÉTODOS NUEVOS PARA DASHBOARD DE CLIENTE ====================
+    
+    /**
+     * Obtiene las reservas de un cliente filtradas por estado
+     * @param idCliente ID del cliente
+     * @param estado Estado de la reserva (PENDIENTE, COMPLETADA, CANCELADA)
+     * @return Lista de reservas ordenadas por fecha descendente
+     */
+    List<Reserva> obtenerPorClienteYEstado(Long idCliente, Reserva.EstadoReserva estado);
+    
+    /**
+     * Cuenta las reservas de un cliente por estado
+     * @param idCliente ID del cliente
+     * @param estado Estado a contar
+     * @return Cantidad de reservas
+     */
+    long contarPorClienteYEstado(Long idCliente, Reserva.EstadoReserva estado);
+
+    /**
+     * Valida si un cliente puede hacer una nueva reserva
+     * @param idCliente ID del cliente
+     * @throws IllegalStateException si el cliente excede los límites
+     */
+    void validarLimitesReserva(Long idCliente);
+}

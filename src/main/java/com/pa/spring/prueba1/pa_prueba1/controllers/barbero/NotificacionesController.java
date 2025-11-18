@@ -35,10 +35,12 @@ public class NotificacionesController {
 
     /**
      * Vista principal de notificaciones con filtros y paginación
+     * ✅ CORREGIDO: Maneja tipo y filtro por separado
      */
     @GetMapping
     public String notificaciones(Model model, Authentication auth,
                                  @RequestParam(required = false) String tipo,
+                                 @RequestParam(required = false) String filtro,
                                  @RequestParam(defaultValue = "0") int page,
                                  @RequestParam(defaultValue = "10") int size,
                                  @RequestParam(required = false) String buscar) {
@@ -50,31 +52,66 @@ public class NotificacionesController {
             
             Page<Notificacion> notificacionesPage;
 
-            // Filtrar según tipo o búsqueda
+            System.out.println("🔍 Filtros - tipo: " + tipo + ", filtro: " + filtro + ", buscar: " + buscar);
+
+            // Prioridad: buscar > filtro > tipo
             if (buscar != null && !buscar.trim().isEmpty()) {
+                // Búsqueda por texto
                 notificacionesPage = barberoService.buscarNotificaciones(barbero.getIdBarbero(), buscar, pageable);
-            } else if (tipo != null && !tipo.isEmpty()) {
-                if (tipo.equals("noLeidas")) {
-                    notificacionesPage = barberoService.obtenerNotificacionesNoLeidasPaginadas(barbero.getIdBarbero(), pageable);
-                } else {
-                    try {
-                        Notificacion.TipoNotificacion tipoEnum = Notificacion.TipoNotificacion.valueOf(tipo.toUpperCase());
-                        notificacionesPage = barberoService.obtenerNotificacionesPorTipoPaginadas(barbero.getIdBarbero(), tipoEnum, pageable);
-                    } catch (IllegalArgumentException e) {
-                        notificacionesPage = barberoService.obtenerNotificacionesBarberoP(barbero.getIdBarbero(), pageable);
-                    }
+                System.out.println("📝 Búsqueda aplicada");
+                
+            } else if (filtro != null && filtro.equalsIgnoreCase("noLeidas")) {
+                // Filtro especial de no leídas
+                notificacionesPage = barberoService.obtenerNotificacionesNoLeidasPaginadas(barbero.getIdBarbero(), pageable);
+                System.out.println("📧 Filtrando no leídas");
+                
+            } else if (filtro != null && filtro.equalsIgnoreCase("reservas")) {
+                // Filtro especial para TODAS las reservas
+                notificacionesPage = barberoService.obtenerNotificacionesPorTiposPaginadas(
+                    barbero.getIdBarbero(),
+                    List.of(Notificacion.TipoNotificacion.NUEVA_RESERVA, 
+                            Notificacion.TipoNotificacion.RESERVA_CANCELADA,
+                            Notificacion.TipoNotificacion.RESERVA_CONFIRMADA),
+                    pageable
+                );
+                System.out.println("📅 Filtrando todas las reservas");
+                
+            } else if (filtro != null && filtro.equalsIgnoreCase("ausencias")) {
+                // Filtro especial para TODAS las ausencias
+                notificacionesPage = barberoService.obtenerNotificacionesPorTiposPaginadas(
+                    barbero.getIdBarbero(),
+                    List.of(Notificacion.TipoNotificacion.AUSENCIA_APROBADA, 
+                            Notificacion.TipoNotificacion.AUSENCIA_RECHAZADA),
+                    pageable
+                );
+                System.out.println("📋 Filtrando todas las ausencias");
+                
+            } else if (tipo != null && !tipo.trim().isEmpty()) {
+                // Filtrar por tipo de notificación específico
+                try {
+                    Notificacion.TipoNotificacion tipoEnum = Notificacion.TipoNotificacion.valueOf(tipo.toUpperCase());
+                    notificacionesPage = barberoService.obtenerNotificacionesPorTipoPaginadas(barbero.getIdBarbero(), tipoEnum, pageable);
+                    System.out.println("✅ Filtrando por tipo: " + tipoEnum);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("⚠️ Tipo inválido: " + tipo);
+                    notificacionesPage = barberoService.obtenerNotificacionesBarberoP(barbero.getIdBarbero(), pageable);
                 }
             } else {
+                // Sin filtros
                 notificacionesPage = barberoService.obtenerNotificacionesBarberoP(barbero.getIdBarbero(), pageable);
+                System.out.println("📋 Mostrando todas");
             }
 
             // Contadores para los badges
             long total = barberoService.obtenerNotificacionesBarbero(barbero.getIdBarbero()).size();
             long noLeidas = barberoService.contarNotificacionesNoLeidas(barbero.getIdBarbero());
             long notifReservas = barberoService.contarNotificacionesPorTipos(barbero.getIdBarbero(), 
-                List.of(Notificacion.TipoNotificacion.NUEVA_RESERVA, Notificacion.TipoNotificacion.RESERVA_CANCELADA));
+                List.of(Notificacion.TipoNotificacion.NUEVA_RESERVA, 
+                        Notificacion.TipoNotificacion.RESERVA_CANCELADA,
+                        Notificacion.TipoNotificacion.RESERVA_CONFIRMADA));
             long notifAusencias = barberoService.contarNotificacionesPorTipos(barbero.getIdBarbero(),
-                List.of(Notificacion.TipoNotificacion.AUSENCIA_APROBADA, Notificacion.TipoNotificacion.AUSENCIA_RECHAZADA));
+                List.of(Notificacion.TipoNotificacion.AUSENCIA_APROBADA, 
+                        Notificacion.TipoNotificacion.AUSENCIA_RECHAZADA));
             long notifSistema = barberoService.contarNotificacionesPorTipo(barbero.getIdBarbero(), 
                 Notificacion.TipoNotificacion.SISTEMA);
 
@@ -87,6 +124,7 @@ public class NotificacionesController {
             model.addAttribute("notifAusencias", notifAusencias);
             model.addAttribute("notifSistema", notifSistema);
             model.addAttribute("tipoFiltro", tipo);
+            model.addAttribute("filtroActual", filtro);
             model.addAttribute("busqueda", buscar);
             
             // Información de paginación
@@ -96,9 +134,12 @@ public class NotificacionesController {
             model.addAttribute("hasNext", notificacionesPage.hasNext());
             model.addAttribute("hasPrevious", notificacionesPage.hasPrevious());
 
+            System.out.println("✅ Notificaciones cargadas: " + notificacionesPage.getContent().size());
+
         } catch (Exception e) {
-            model.addAttribute("error", "Error al cargar notificaciones: " + e.getMessage());
+            System.err.println("❌ Error al cargar notificaciones: " + e.getMessage());
             e.printStackTrace();
+            model.addAttribute("error", "Error al cargar notificaciones: " + e.getMessage());
         }
         return "barbero/notificaciones";
     }
@@ -218,6 +259,7 @@ public class NotificacionesController {
         return switch (tipo) {
             case NUEVA_RESERVA -> "Nueva Reserva";
             case RESERVA_CANCELADA -> "Reserva Cancelada";
+            case RESERVA_CONFIRMADA -> "Reserva Confirmada";
             case AUSENCIA_APROBADA -> "Ausencia Aprobada";
             case AUSENCIA_RECHAZADA -> "Ausencia Rechazada";
             case RECORDATORIO -> "Recordatorio de Cita";

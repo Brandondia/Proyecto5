@@ -34,7 +34,8 @@ public class ReservaServiceImpl implements ReservaService {
     @Autowired
     private TurnoRepository turnoRepository;
     
-    // Obtener todas las reservas
+    // ==================== MÉTODOS BÁSICOS ====================
+    
     @Override
     public List<Reserva> obtenerTodas() {
         List<Reserva> reservas = reservaRepository.findAll();
@@ -42,31 +43,26 @@ public class ReservaServiceImpl implements ReservaService {
         return reservas;
     }
     
-    // Obtener una reserva por su ID
     @Override
     public Reserva obtenerPorId(Long id) {
         return reservaRepository.findById(id).orElse(null);
     }
     
-    // Obtener todas las reservas de un cliente específico
     @Override
     public List<Reserva> obtenerPorCliente(Long idCliente) {
         return reservaRepository.findByClienteIdCliente(idCliente);
     }
     
-    // Obtener todas las reservas de un barbero específico
     @Override
     public List<Reserva> obtenerPorBarbero(Long idBarbero) {
         return reservaRepository.findByBarberoIdBarbero(idBarbero);
     }
     
-    // Obtener reservas por su estado (PENDIENTE, COMPLETADA, CANCELADA)
     @Override
     public List<Reserva> obtenerPorEstado(Reserva.EstadoReserva estado) {
         return reservaRepository.findByEstado(estado);
     }
     
-    // Obtener reservas dentro de un rango de fechas
     @Override
     public List<Reserva> obtenerPorRangoFechas(LocalDate fechaInicio, LocalDate fechaFin) {
         LocalDateTime inicio = fechaInicio.atStartOfDay();
@@ -74,7 +70,23 @@ public class ReservaServiceImpl implements ReservaService {
         return reservaRepository.findByFechaHoraTurnoBetween(inicio, fin);
     }
     
-    // ✅ CREAR RESERVA CON VALIDACIONES COMPLETAS
+    // ==================== MÉTODOS NUEVOS PARA DASHBOARD DE CLIENTE ====================
+    
+    @Override
+    public List<Reserva> obtenerPorClienteYEstado(Long idCliente, Reserva.EstadoReserva estado) {
+        return reservaRepository.findByClienteIdClienteAndEstadoOrderByFechaHoraTurnoDesc(
+            idCliente, 
+            estado
+        );
+    }
+    
+    @Override
+    public long contarPorClienteYEstado(Long idCliente, Reserva.EstadoReserva estado) {
+        return reservaRepository.countByClienteIdClienteAndEstado(idCliente, estado);
+    }
+    
+    // ==================== CREAR RESERVA ====================
+    
     @Override
     @Transactional
     public Reserva crearReserva(Long idCliente, Long idBarbero, Long idCorte, Long idTurno, String comentarios) {
@@ -230,7 +242,8 @@ public class ReservaServiceImpl implements ReservaService {
         }
     }
     
-    // Completar una reserva (cambiar su estado a COMPLETADA)
+    // ==================== COMPLETAR RESERVA ====================
+    
     @Override
     @Transactional
     public Reserva completarReserva(Long idReserva) {
@@ -252,7 +265,8 @@ public class ReservaServiceImpl implements ReservaService {
         return reservaRepository.save(reserva);
     }
     
-    // ✅ CORREGIDO: Cancelar reserva liberando TODOS los turnos consecutivos
+    // ==================== CANCELAR RESERVA ====================
+    
     @Override
     @Transactional
     public Reserva cancelarReserva(Long idReserva) {
@@ -313,7 +327,8 @@ public class ReservaServiceImpl implements ReservaService {
         return reservaActualizada;
     }
     
-    // ✅ CORREGIDO: Eliminar reserva liberando TODOS los turnos consecutivos
+    // ==================== ELIMINAR RESERVA ====================
+    
     @Override
     @Transactional
     public void eliminarReserva(Long idReserva) {
@@ -321,7 +336,7 @@ public class ReservaServiceImpl implements ReservaService {
         if (optReserva.isPresent()) {
             Reserva reserva = optReserva.get();
             
-            //// Liberar los turnos si la reserva está pendiente
+            // Liberar los turnos si la reserva está pendiente
             if (reserva.getEstado() == Reserva.EstadoReserva.PENDIENTE) {
                 System.out.println("=== ELIMINANDO RESERVA Y LIBERANDO TURNOS ===");
                 System.out.println("Reserva ID: " + idReserva);
@@ -360,7 +375,8 @@ public class ReservaServiceImpl implements ReservaService {
         }
     }
     
-    // Verificar si existe una reserva pendiente para un turno específico
+    // ==================== VERIFICACIONES ====================
+    
     @Override
     public boolean existeReservaParaTurno(Long idTurno) {
         List<Reserva> reservas = reservaRepository.findByTurnoIdTurno(idTurno);
@@ -368,7 +384,8 @@ public class ReservaServiceImpl implements ReservaService {
                reservas.stream().anyMatch(r -> r.getEstado() == Reserva.EstadoReserva.PENDIENTE);
     }
 
-    // Inicialización del servicio para mostrar el estado de las reservas al iniciar la aplicación
+    // ==================== INICIALIZACIÓN ====================
+    
     @PostConstruct
     public void init() {
         try {
@@ -390,5 +407,11 @@ public class ReservaServiceImpl implements ReservaService {
             System.out.println("Error al inicializar el servicio de reservas: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void validarLimitesReserva(Long idCliente) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'validarLimitesReserva'");
     }
 }

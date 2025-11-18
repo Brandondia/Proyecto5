@@ -248,43 +248,43 @@
             </form>
         </div>
 
-        <!-- Filtros -->
+        <!-- Filtros CORREGIDOS ✅ -->
         <ul class="nav nav-tabs filter-tabs mb-4" role="tablist">
             <li class="nav-item">
                 <a th:href="@{/barbero/notificaciones}" 
-                   th:classappend="${tipoFiltro == null ? 'active' : ''}"
+                   th:classappend="${tipoFiltro == null && filtroActual == null ? 'active' : ''}"
                    class="nav-link">
                     <i class="bi bi-list-ul"></i> Todas 
                     <span class="badge bg-primary ms-2" th:text="${totalNotificaciones}">0</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a th:href="@{/barbero/notificaciones(tipo='noLeidas')}" 
-                   th:classappend="${tipoFiltro == 'noLeidas' ? 'active' : ''}"
+                <a th:href="@{/barbero/notificaciones(filtro='noLeidas')}" 
+                   th:classappend="${filtroActual == 'noLeidas' ? 'active' : ''}"
                    class="nav-link">
                     <i class="bi bi-envelope"></i> No Leídas 
                     <span class="badge bg-danger ms-2" th:text="${noLeidas}">0</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a th:href="@{/barbero/notificaciones(tipo='nueva_reserva')}" 
-                   th:classappend="${tipoFiltro == 'nueva_reserva' ? 'active' : ''}"
+                <a th:href="@{/barbero/notificaciones(filtro='reservas')}" 
+                   th:classappend="${filtroActual == 'reservas' ? 'active' : ''}"
                    class="nav-link">
                     <i class="bi bi-calendar-check"></i> Reservas 
                     <span class="badge bg-info ms-2" th:text="${notifReservas}">0</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a th:href="@{/barbero/notificaciones(tipo='ausencia_aprobada')}" 
-                   th:classappend="${tipoFiltro == 'ausencia_aprobada' ? 'active' : ''}"
+                <a th:href="@{/barbero/notificaciones(filtro='ausencias')}" 
+                   th:classappend="${filtroActual == 'ausencias' ? 'active' : ''}"
                    class="nav-link">
                     <i class="bi bi-calendar-x"></i> Ausencias 
                     <span class="badge bg-warning ms-2" th:text="${notifAusencias}">0</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a th:href="@{/barbero/notificaciones(tipo='sistema')}" 
-                   th:classappend="${tipoFiltro == 'sistema' ? 'active' : ''}"
+                <a th:href="@{/barbero/notificaciones(tipo='SISTEMA')}" 
+                   th:classappend="${tipoFiltro == 'SISTEMA' ? 'active' : ''}"
                    class="nav-link">
                     <i class="bi bi-gear"></i> Sistema 
                     <span class="badge bg-secondary ms-2" th:text="${notifSistema}">0</span>
@@ -335,12 +335,12 @@
                             </div>
                             <div class="col">
                                 <h6 class="mb-1">
-                                    <strong th:text="${notif.titulo != null ? notif.titulo : getTituloNotificacion(notif.tipo)}">Notificación</strong>
+                                    <strong th:text="${notif.titulo != null ? notif.titulo : 'Notificación'}">Notificación</strong>
                                 </h6>
                                 <p class="mb-1" th:text="${notif.mensaje}">Mensaje de la notificación</p>
                                 <div class="notification-time">
                                     <i class="bi bi-clock"></i>
-                                    <span th:text="${getFormatoTiempoTranscurrido(notif.fechaCreacion)}">Hace 5 minutos</span>
+                                    <span th:text="${#temporals.format(notif.fechaCreacion, 'dd/MM/yyyy HH:mm')}">Hace 5 minutos</span>
                                 </div>
                             </div>
                             <div class="col-auto">
@@ -386,14 +386,14 @@
             <ul class="pagination justify-content-center">
                 <li class="page-item" th:classappend="${!hasPrevious ? 'disabled' : ''}">
                     <a class="page-link" 
-                       th:href="@{/barbero/notificaciones(page=${currentPage - 1}, tipo=${tipoFiltro}, buscar=${busqueda})}">
+                       th:href="@{/barbero/notificaciones(page=${currentPage - 1}, tipo=${tipoFiltro}, filtro=${filtroActual}, buscar=${busqueda})}">
                         <i class="bi bi-chevron-left"></i> Anterior
                     </a>
                 </li>
                 
                 <!-- Primera página -->
                 <li class="page-item" th:if="${currentPage > 2}">
-                    <a class="page-link" th:href="@{/barbero/notificaciones(page=0, tipo=${tipoFiltro}, buscar=${busqueda})}">1</a>
+                    <a class="page-link" th:href="@{/barbero/notificaciones(page=0, tipo=${tipoFiltro}, filtro=${filtroActual}, buscar=${busqueda})}">1</a>
                 </li>
                 <li class="page-item disabled" th:if="${currentPage > 3}">
                     <span class="page-link">...</span>
@@ -403,7 +403,7 @@
                 <li class="page-item" th:each="i : ${#numbers.sequence(currentPage > 0 ? currentPage - 1 : 0, currentPage < totalPages - 1 ? currentPage + 1 : totalPages - 1)}"
                     th:classappend="${i == currentPage ? 'active' : ''}">
                     <a class="page-link" 
-                       th:href="@{/barbero/notificaciones(page=${i}, tipo=${tipoFiltro}, buscar=${busqueda})}"
+                       th:href="@{/barbero/notificaciones(page=${i}, tipo=${tipoFiltro}, filtro=${filtroActual}, buscar=${busqueda})}"
                        th:text="${i + 1}">1</a>
                 </li>
                 
@@ -413,13 +413,13 @@
                 </li>
                 <li class="page-item" th:if="${currentPage < totalPages - 3}">
                     <a class="page-link" 
-                       th:href="@{/barbero/notificaciones(page=${totalPages - 1}, tipo=${tipoFiltro}, buscar=${busqueda})}"
+                       th:href="@{/barbero/notificaciones(page=${totalPages - 1}, tipo=${tipoFiltro}, filtro=${filtroActual}, buscar=${busqueda})}"
                        th:text="${totalPages}">10</a>
                 </li>
                 
                 <li class="page-item" th:classappend="${!hasNext ? 'disabled' : ''}">
                     <a class="page-link" 
-                       th:href="@{/barbero/notificaciones(page=${currentPage + 1}, tipo=${tipoFiltro}, buscar=${busqueda})}">
+                       th:href="@{/barbero/notificaciones(page=${currentPage + 1}, tipo=${tipoFiltro}, filtro=${filtroActual}, buscar=${busqueda})}">
                         Siguiente <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>

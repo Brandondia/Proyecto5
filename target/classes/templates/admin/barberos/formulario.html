@@ -258,7 +258,9 @@
 
                     <div class="mb-3">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="activo" th:field="*{activo}" checked>
+                            <input type="hidden" name="activo" value="false" />
+                            <input class="form-check-input" type="checkbox" id="activo" 
+                                   th:field="*{activo}" value="true">
                             <label class="form-check-label" for="activo">
                                 <strong>Barbero Activo</strong>
                                 <br><small class="text-muted">Si está inactivo, no podrá iniciar sesión ni recibir reservas</small>
@@ -270,26 +272,43 @@
                         <label class="form-label"><i class="bi bi-bell"></i> Notificaciones</label>
                         
                         <div class="form-check">
+                            <input type="hidden" name="notifReservas" value="false" />
                             <input class="form-check-input" type="checkbox" id="notifReservas" 
-                                   th:field="*{notifReservas}" checked>
+                                   th:field="*{notifReservas}" value="true">
                             <label class="form-check-label" for="notifReservas">
                                 Notificar nuevas reservas
                             </label>
                         </div>
                         
                         <div class="form-check">
+                            <input type="hidden" name="notifCancelaciones" value="false" />
                             <input class="form-check-input" type="checkbox" id="notifCancelaciones" 
-                                   th:field="*{notifCancelaciones}" checked>
+                                   th:field="*{notifCancelaciones}" value="true">
                             <label class="form-check-label" for="notifCancelaciones">
                                 Notificar cancelaciones
                             </label>
                         </div>
                         
                         <div class="form-check">
+                            <input type="hidden" name="notifRecordatorios" value="false" />
                             <input class="form-check-input" type="checkbox" id="notifRecordatorios" 
-                                   th:field="*{notifRecordatorios}" checked>
+                                   th:field="*{notifRecordatorios}" value="true">
                             <label class="form-check-label" for="notifRecordatorios">
                                 Enviar recordatorios
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-shield-lock"></i> Seguridad</label>
+                        
+                        <div class="form-check">
+                            <input type="hidden" name="autenticacionDosPasos" value="false" />
+                            <input class="form-check-input" type="checkbox" id="autenticacionDosPasos" 
+                                   th:field="*{autenticacionDosPasos}" value="true">
+                            <label class="form-check-label" for="autenticacionDosPasos">
+                                Activar autenticación de dos pasos
+                                <br><small class="text-muted">Requiere código adicional al iniciar sesión</small>
                             </label>
                         </div>
                     </div>

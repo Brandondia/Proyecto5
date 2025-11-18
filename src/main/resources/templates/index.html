@@ -73,6 +73,9 @@
                         <a class="nav-link" href="/reserva">Reservar</a>
                     </li>
                     <li class="nav-item" th:if="${clienteLogueado != null}">
+                        <a class="nav-link" href="/reserva/mis-reservas">Mis Reservas</a>
+                    </li>
+                    <li class="nav-item" th:if="${clienteLogueado != null}">
                         <a class="nav-link" th:href="@{/logout}">Cerrar Sesión</a>
                     </li>
                 </ul>

@@ -12,7 +12,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.time.format.TextStyle;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/reserva")
@@ -36,7 +39,6 @@ public class ReservaController {
     @Autowired
     private EmailService emailService;
 
-    // Mostrar página de reserva
     @GetMapping
     public String mostrarPaginaReserva(Model model, @AuthenticationPrincipal User user) {
         Cliente cliente = clienteService.obtenerPorCorreo(user.getUsername());
@@ -44,14 +46,27 @@ public class ReservaController {
         List<CorteDeCabello> cortes = corteDeCabelloService.obtenerTodos();
         List<Barbero> barberos = barberoService.obtenerTodos();
 
+        // 🔥 VERIFICAR LÍMITES ANTES DE MOSTRAR EL FORMULARIO
+        long reservasPendientes = reservaService.contarPorClienteYEstado(
+                cliente.getIdCliente(),
+                Reserva.EstadoReserva.PENDIENTE);
+
+        boolean puedeReservar = reservasPendientes < 3; // Obtener de config si quieres
+
         model.addAttribute("cortes", cortes);
         model.addAttribute("barberos", barberos);
         model.addAttribute("clienteId", cliente.getIdCliente());
 
+        // 🔥 NUEVOS ATRIBUTOS PARA CONTROLAR EL FORMULARIO
+        model.addAttribute("puedeReservar", puedeReservar);
+        model.addAttribute("reservasPendientes", reservasPendientes);
+        model.addAttribute("limiteReservas", 3);
+
         return "reserva";
     }
 
-    // Obtener turnos disponibles por barbero (endpoint original - mantener para compatibilidad)
+    // Obtener turnos disponibles por barbero (endpoint original - mantener para
+    // compatibilidad)
     @GetMapping("/turnos/{barberoId}")
     @ResponseBody
     public List<Turno> obtenerTurnosDisponibles(@PathVariable Long barberoId) {
@@ -62,18 +77,18 @@ public class ReservaController {
     @GetMapping("/turnos/{barberoId}/{duracion}")
     @ResponseBody
     public List<Turno> obtenerTurnosPorDuracion(
-            @PathVariable Long barberoId, 
+            @PathVariable Long barberoId,
             @PathVariable Integer duracion) {
-        
+
         System.out.println("=== ENDPOINT LLAMADO ===");
         System.out.println("Barbero ID: " + barberoId);
         System.out.println("Duración: " + duracion + " minutos");
-        
+
         List<Turno> turnos = turnoService.obtenerTurnosDisponiblesPorDuracionYBarbero(barberoId, duracion);
-        
+
         System.out.println("Turnos devueltos: " + turnos.size());
         System.out.println("=======================");
-        
+
         return turnos;
     }
 
@@ -97,14 +112,16 @@ public class ReservaController {
         }
 
         try {
+            // ✅ VALIDAR LÍMITES ANTES DE CREAR LA RESERVA
+            reservaService.validarLimitesReserva(cliente.getIdCliente());
+
             // Crear reserva
             Reserva reserva = reservaService.crearReserva(
                     cliente.getIdCliente(),
                     barberoId,
                     corteId,
                     turnoId,
-                    comentarios
-            );
+                    comentarios);
 
             if (reserva == null) {
                 redirectAttributes.addFlashAttribute("error",
@@ -133,7 +150,7 @@ public class ReservaController {
             return "redirect:/reserva/confirmacion";
 
         } catch (IllegalStateException e) {
-            // Errores de validación (barbero ausente, turnos no disponibles, etc.)
+            // ✅ CAPTURAR ERRORES DE VALIDACIÓN DE LÍMITES Y OTROS
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/reserva";
         } catch (Exception e) {
@@ -150,26 +167,133 @@ public class ReservaController {
         return "confirmacion";
     }
 
-    // Ver reservas del cliente
+    // ✅ NUEVA VERSION MEJORADA: Ver reservas del cliente con estadísticas completas
     @GetMapping("/mis-reservas")
     public String misReservas(Model model, @AuthenticationPrincipal User user) {
         Cliente cliente = clienteService.obtenerPorCorreo(user.getUsername());
-        List<Reserva> reservas = reservaService.obtenerPorCliente(cliente.getIdCliente());
 
-        model.addAttribute("reservas", reservas);
+        // Obtener reservas activas (pendientes)
+        List<Reserva> reservasActivas = reservaService.obtenerPorClienteYEstado(
+                cliente.getIdCliente(),
+                Reserva.EstadoReserva.PENDIENTE);
+
+        // Obtener historial (reservas completadas)
+        List<Reserva> historial = reservaService.obtenerPorClienteYEstado(
+                cliente.getIdCliente(),
+                Reserva.EstadoReserva.COMPLETADA);
+
+        // Calcular estadísticas
+        Map<String, Object> estadisticas = calcularEstadisticas(cliente.getIdCliente(), historial);
+
+        // Calcular datos para gráficos
+        Map<String, Object> graficos = calcularDatosGraficos(historial);
+
+        model.addAttribute("usuario", cliente);
+        model.addAttribute("reservas", reservasActivas);
+        model.addAttribute("historial", historial);
+        model.addAttribute("estadisticas", estadisticas);
+        model.addAttribute("graficos", graficos);
+
         return "mis-reservas";
+    }
+
+    // ✅ NUEVO: Método para calcular estadísticas del cliente
+    private Map<String, Object> calcularEstadisticas(Long clienteId, List<Reserva> historial) {
+        Map<String, Object> stats = new HashMap<>();
+
+        // Total de visitas completadas
+        stats.put("totalVisitas", historial.size());
+
+        // Total gastado
+        double totalGastado = historial.stream()
+                .filter(r -> r.getCorte() != null)
+                .mapToDouble(r -> r.getCorte().getPrecio())
+                .sum();
+        stats.put("totalGastado", String.format("%.2f", totalGastado));
+
+        // Promedio de gasto
+        double promedioGasto = historial.isEmpty() ? 0 : totalGastado / historial.size();
+        stats.put("promedioGasto", String.format("%.2f", promedioGasto));
+
+        // Reservas pendientes
+        long reservasPendientes = reservaService.contarPorClienteYEstado(
+                clienteId,
+                Reserva.EstadoReserva.PENDIENTE);
+        stats.put("reservasPendientes", reservasPendientes);
+
+        // Barbero favorito (el que más ha atendido)
+        Map<String, Long> conteoBarberos = historial.stream()
+                .filter(r -> r.getBarbero() != null)
+                .collect(Collectors.groupingBy(
+                        r -> r.getBarbero().getNombre(),
+                        Collectors.counting()));
+
+        String barberoFavorito = conteoBarberos.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("N/A");
+        stats.put("barberoFavorito", barberoFavorito);
+
+        // Servicio favorito
+        Map<String, Long> conteoServicios = historial.stream()
+                .filter(r -> r.getCorte() != null)
+                .collect(Collectors.groupingBy(
+                        r -> r.getCorte().getNombre(),
+                        Collectors.counting()));
+
+        String servicioFavorito = conteoServicios.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("N/A");
+        stats.put("servicioFavorito", servicioFavorito);
+
+        return stats;
+    }
+
+    // ✅ NUEVO: Método para calcular datos de gráficos
+    private Map<String, Object> calcularDatosGraficos(List<Reserva> historial) {
+        Map<String, Object> graficos = new HashMap<>();
+
+        // Datos para gráfico de gastos mensuales (últimos 6 meses)
+        Map<String, Double> gastosPorMes = historial.stream()
+                .filter(r -> r.getCorte() != null && r.getFechaHoraTurno() != null)
+                .collect(Collectors.groupingBy(
+                        r -> r.getFechaHoraTurno().getMonth().getDisplayName(TextStyle.SHORT, new Locale("es", "ES")),
+                        Collectors.summingDouble(r -> r.getCorte().getPrecio())));
+
+        // Convertir a arrays para Chart.js
+        List<String> mesesLabels = new ArrayList<>(gastosPorMes.keySet());
+        List<Double> mesesData = new ArrayList<>(gastosPorMes.values());
+
+        graficos.put("gastosLabels", mesesLabels);
+        graficos.put("gastosData", mesesData);
+
+        // Datos para gráfico de servicios más usados
+        Map<String, Long> serviciosCount = historial.stream()
+                .filter(r -> r.getCorte() != null)
+                .collect(Collectors.groupingBy(
+                        r -> r.getCorte().getNombre(),
+                        Collectors.counting()));
+
+        List<String> serviciosLabels = new ArrayList<>(serviciosCount.keySet());
+        List<Long> serviciosData = new ArrayList<>(serviciosCount.values());
+
+        graficos.put("serviciosLabels", serviciosLabels);
+        graficos.put("serviciosData", serviciosData);
+
+        return graficos;
     }
 
     // Cancelar reserva
     @GetMapping("/cancelar/{id}")
     public String cancelarReserva(@PathVariable Long id,
-                                  RedirectAttributes redirectAttributes,
-                                  @AuthenticationPrincipal User user) {
+            RedirectAttributes redirectAttributes,
+            @AuthenticationPrincipal User user) {
         Cliente cliente = clienteService.obtenerPorCorreo(user.getUsername());
 
         try {
             Reserva reserva = reservaService.obtenerPorId(id);
-            
+
             if (reserva == null) {
                 redirectAttributes.addFlashAttribute("error", "Reserva no encontrada.");
                 return "redirect:/reserva/mis-reservas";
@@ -197,7 +321,8 @@ public class ReservaController {
                 System.err.println("⚠️ No se pudo enviar el email de cancelación: " + e.getMessage());
             }
 
-            redirectAttributes.addFlashAttribute("mensaje", "Reserva cancelada con éxito. Se ha enviado un email de confirmación.");
+            redirectAttributes.addFlashAttribute("mensaje",
+                    "Reserva cancelada con éxito. Se ha enviado un email de confirmación.");
 
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error al cancelar la reserva: " + e.getMessage());
